@@ -22,8 +22,8 @@ const swaggerDefinition = {
         process.env.VERCEL_URL && !process.env.VERCEL_URL.includes("localhost")
           ? `https://${process.env.VERCEL_URL}`
           : process.env.NODE_ENV === "production"
-            ? "https://studysync-backend-l7jev7bwe-hoangsonw.vercel.app"
-            : "http://localhost:5000",
+            ? process.env.BACKEND_URL || "http://localhost:3001"
+            : "http://localhost:3001",
       description:
         process.env.NODE_ENV === "production"
           ? "Production Server"
