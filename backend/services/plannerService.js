@@ -26,7 +26,8 @@ const normalizeEvent = (event) => {
 
   return {
     title: sanitizeString(event.title) || "Study Session",
-    description: sanitizeString(event.description) || "AI generated study session.",
+    description:
+      sanitizeString(event.description) || "AI generated study session.",
     startDate,
     endDate,
     category: sanitizeString(event.category) || "Study",
@@ -61,11 +62,20 @@ const buildPlannerPrompt = ({ prompt, startDate, endDate, dailyHours }) => {
   const requestedEnd = sanitizeString(endDate) || "one week from today";
 
   return `You are a strict study planner assistant. Create a personalized study schedule for the user based on the following goals and availability. Respond with valid JSON only, using this exact schema:\n{\n  "events": [\n    {\n      \"title\": \"...\",\n      \"description\": \"...\",\n      \"startDate\": \"YYYY-MM-DDTHH:mm:ssZ\",\n      \"endDate\": \"YYYY-MM-DDTHH:mm:ssZ\",\n      \"category\": \"...\",\n      \"color\": \"...\",\n      \"allDay\": false\n    }\n  ]\n}\n\nThe schedule should cover the date range from ${requestedStart} to ${requestedEnd}.\nUse study sessions of up to ${availableHours} hours per day.\nDo not include more than 3 sessions per day.\nKeep titles short and descriptive.\nUse ISO 8601 datetimes for startDate and endDate.\n\nUser goals and context:\n"""${sanitizeString(prompt)}"""\n\nReturn only valid JSON.`;
-`;
 };
 
-const runPlanGeneration = async ({ prompt, startDate, endDate, dailyHours }) => {
-  const fullPrompt = buildPlannerPrompt({ prompt, startDate, endDate, dailyHours });
+const runPlanGeneration = async ({
+  prompt,
+  startDate,
+  endDate,
+  dailyHours,
+}) => {
+  const fullPrompt = buildPlannerPrompt({
+    prompt,
+    startDate,
+    endDate,
+    dailyHours,
+  });
 
   const response = await axios.post(
     `${OLLAMA_BASE_URL}/api/chat`,
@@ -74,7 +84,8 @@ const runPlanGeneration = async ({ prompt, startDate, endDate, dailyHours }) => 
       messages: [
         {
           role: "system",
-          content: "You are a study planner assistant producing structured JSON output.",
+          content:
+            "You are a study planner assistant producing structured JSON output.",
         },
         {
           role: "user",
@@ -87,7 +98,8 @@ const runPlanGeneration = async ({ prompt, startDate, endDate, dailyHours }) => 
   );
 
   const rawContent =
-    response.data?.message?.content || response.data?.choices?.[0]?.message?.content;
+    response.data?.message?.content ||
+    response.data?.choices?.[0]?.message?.content;
 
   if (!rawContent) {
     throw new Error("No content was returned from the AI service.");
