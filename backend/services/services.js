@@ -1,96 +1,18 @@
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 const { User, Group } = require("../models/models");
 require("dotenv").config();
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_TOKEN);
-const GEMINI_MODELS_ENDPOINT =
-  "https://generativelanguage.googleapis.com/v1/models";
-const GEMINI_MODEL_CACHE_TTL_MS = 10 * 60 * 1000;
-const FALLBACK_GEMINI_MODELS = ["gemini-2.5-flash"];
+// ─── Ollama AI Config ────────────────────────────────────────────────────────
+const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "mistral";
 
-let geminiModelCache = { models: [], fetchedAt: 0 };
-let geminiModelFetchPromise = null;
-let geminiModelRotationIndex = 0;
-
+// ─── Spotify Token Cache ─────────────────────────────────────────────────────
 let spotifyAccessToken = null;
 let spotifyTokenExpiry = null;
 
-const normalizeGeminiModelName = (name = "") => name.replace(/^models\//, "");
-
-const isSupportedGeminiModel = (model = {}) => {
-  const name = (model.name || "").toLowerCase();
-  if (!name.includes("gemini")) {
-    return false;
-  }
-  if (name.includes("embedding") || name.includes("-pro")) {
-    return false;
-  }
-
-  const supportedMethods = model.supportedGenerationMethods || [];
-  return supportedMethods.includes("generateContent");
-};
-
-const fetchGeminiModels = async () => {
-  const apiKey = process.env.GEMINI_API_TOKEN;
-  if (!apiKey) {
-    throw new Error("GEMINI_API_TOKEN is not configured");
-  }
-
-  const response = await axios.get(GEMINI_MODELS_ENDPOINT, {
-    params: { key: apiKey },
-  });
-
-  const models = (response.data?.models || [])
-    .filter(isSupportedGeminiModel)
-    .map((model) => normalizeGeminiModelName(model.name));
-
-  const uniqueModels = [...new Set(models)];
-
-  if (!uniqueModels.length) {
-    throw new Error("No supported Gemini models available");
-  }
-
-  return uniqueModels;
-};
-
-const getGeminiModels = async () => {
-  const now = Date.now();
-  const cacheAge = now - geminiModelCache.fetchedAt;
-  if (geminiModelCache.models.length && cacheAge < GEMINI_MODEL_CACHE_TTL_MS) {
-    return geminiModelCache.models;
-  }
-
-  if (geminiModelFetchPromise) {
-    return geminiModelFetchPromise;
-  }
-
-  geminiModelFetchPromise = fetchGeminiModels()
-    .then((models) => {
-      geminiModelCache = { models, fetchedAt: Date.now() };
-      return models;
-    })
-    .catch((error) => {
-      console.error("Error fetching Gemini models:", error.message);
-      if (geminiModelCache.models.length) {
-        return geminiModelCache.models;
-      }
-      return FALLBACK_GEMINI_MODELS;
-    })
-    .finally(() => {
-      geminiModelFetchPromise = null;
-    });
-
-  return geminiModelFetchPromise;
-};
-
-const getRotatedModels = (models, startIndex) => {
-  const safeStartIndex = startIndex % models.length;
-  return models.slice(safeStartIndex).concat(models.slice(0, safeStartIndex));
-};
-
+// ─── Spotify ─────────────────────────────────────────────────────────────────
 const getSpotifyAccessToken = async () => {
   if (spotifyAccessToken && spotifyTokenExpiry > Date.now()) {
     return spotifyAccessToken;
@@ -129,7 +51,6 @@ const getMusicRecommendation = async (searchTerm = "study") => {
   try {
     const accessToken = await getSpotifyAccessToken();
 
-    // Use the search endpoint to search for tracks based on the search term
     const response = await axios.get("https://api.spotify.com/v1/search", {
       headers: { Authorization: `Bearer ${accessToken}` },
       params: {
@@ -139,7 +60,6 @@ const getMusicRecommendation = async (searchTerm = "study") => {
       },
     });
 
-    // Process the results to match the format used earlier
     return response.data.tracks.items.map((track) => ({
       name: track.name,
       artist: track.artists[0]?.name,
@@ -157,7 +77,7 @@ const getMusicRecommendation = async (searchTerm = "study") => {
   }
 };
 
-// User services
+// ─── User Services ────────────────────────────────────────────────────────────
 const registerUser = async (userData) => {
   const {
     name,
@@ -168,13 +88,11 @@ const registerUser = async (userData) => {
     courses = [],
   } = userData;
 
-  // Check if required fields are provided
   if (!name || !email || !password) {
     throw new Error("Name, email, and password are required.");
   }
 
   try {
-    // Create a new user instance with provided data
     const user = new User({
       name,
       email,
@@ -184,10 +102,8 @@ const registerUser = async (userData) => {
       courses,
     });
 
-    // Save the new user
     await user.save();
 
-    // Generate a JWT token for the new user
     return jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "72h",
     });
@@ -199,20 +115,16 @@ const registerUser = async (userData) => {
 
 const loginUser = async (email, password) => {
   try {
-    // Find the user by email
     const user = await User.findOne({ email });
 
-    // If the user is not found, throw an error
     if (!user) {
       throw new Error("User not found");
     }
 
-    // Compare the entered password with the stored plain text password
     if (user.password !== password) {
       throw new Error("Invalid credentials");
     }
 
-    // If the passwords match, generate and return a JWT token
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
@@ -251,7 +163,7 @@ const searchUserProfiles = async (query) => {
   }
 };
 
-// Group and session services
+// ─── Group and Session Services ───────────────────────────────────────────────
 const createGroup = async (members, course) => {
   try {
     const group = new Group({ members, course });
@@ -275,58 +187,58 @@ const createStudySession = async (groupId, date, musicMood) => {
   }
 };
 
-// AI chat service
+// ─── AI Chat Service (Ollama) ─────────────────────────────────────────────────
 let sessionHistory = {};
 
 const chatWithAI = async (sessionId, message, originalText = "") => {
-  const models = await getGeminiModels();
-  if (!models.length) {
-    throw new Error("No Gemini models available");
-  }
-
   if (!sessionHistory[sessionId]) {
     sessionHistory[sessionId] = [];
   }
 
-  let history = sessionHistory[sessionId];
+  const history = sessionHistory[sessionId];
 
+  // Add opening context message if this is the first message in the session
   if (history.length === 0 && originalText) {
-    history.push({ role: "user", parts: [{ text: originalText }] });
+    history.push({ role: "user", content: originalText });
   }
-  history.push({ role: "user", parts: [{ text: message }] });
 
-  const orderedModels = getRotatedModels(models, geminiModelRotationIndex);
-  let lastError = null;
+  history.push({ role: "user", content: message });
 
-  for (let index = 0; index < orderedModels.length; index += 1) {
-    const modelName = orderedModels[index];
-    try {
-      const model = genAI.getGenerativeModel({
-        model: modelName,
-        systemInstruction: `${process.env.AI_INSTRUCTIONS}. Respond to the user conversationally.`,
-      });
-      const chatSession = model.startChat({ history });
-      const result = await chatSession.sendMessage(message);
+  // Build messages array with system instruction prepended
+  const messages = [
+    {
+      role: "system",
+      content: `${process.env.AI_INSTRUCTIONS || "You are a helpful study assistant."}. Respond to the user conversationally.`,
+    },
+    ...history,
+  ];
 
-      if (!result.response || typeof result.response.text !== "function") {
-        throw new Error("Failed to get a response from AI.");
-      }
+  try {
+    const response = await axios.post(
+      `${OLLAMA_BASE_URL}/api/chat`,
+      {
+        model: OLLAMA_MODEL,
+        messages,
+        stream: false,
+      },
+      { timeout: 60000 },
+    );
 
-      const responseText = result.response.text();
-      history.push({ role: "model", parts: [{ text: responseText }] });
-      sessionHistory[sessionId] = history;
+    const responseText = response.data.message?.content;
 
-      const usedIndex = (geminiModelRotationIndex + index) % models.length;
-      geminiModelRotationIndex = (usedIndex + 1) % models.length;
-
-      return responseText;
-    } catch (error) {
-      lastError = error;
-      console.error(`Error in AI chat with model ${modelName}:`, error);
+    if (!responseText) {
+      throw new Error("Empty response from Ollama");
     }
-  }
 
-  throw lastError || new Error("All Gemini models failed.");
+    // Save assistant reply to history
+    history.push({ role: "assistant", content: responseText });
+    sessionHistory[sessionId] = history;
+
+    return responseText;
+  } catch (error) {
+    console.error("Error in AI chat with Ollama:", error.message);
+    throw new Error("AI chat failed. Make sure the Ollama server is running.");
+  }
 };
 
 const clearSessionHistory = (sessionId) => {
@@ -337,17 +249,15 @@ const clearSessionHistory = (sessionId) => {
   }
 };
 
-// Weather service
+// ─── Weather Service ──────────────────────────────────────────────────────────
 const getWeather = async (city) => {
   try {
     const apiKey = process.env.OPENWEATHER_API_KEY;
 
-    // Ensure city name is provided
     if (!city) {
       throw new Error("City name is required");
     }
 
-    // Make request to OpenWeather API
     const response = await axios.get(
       `https://api.openweathermap.org/data/2.5/weather`,
       {
@@ -359,7 +269,6 @@ const getWeather = async (city) => {
       },
     );
 
-    // Extract necessary weather data from response
     const { name, main, weather } = response.data;
 
     return {
