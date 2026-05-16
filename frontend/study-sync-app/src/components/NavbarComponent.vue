@@ -7,16 +7,13 @@
         <v-col class="d-flex align-center">
           <v-icon
             class="logo-icon mr-2"
-            style="
-              font-family: &quot;Poppins&quot;, sans-serif;
-              font-size: 24px;
-            "
+            style="font-family: 'Poppins', sans-serif; font-size: 24px"
             >mdi-school</v-icon
           >
           <v-toolbar-title
             class="title"
             style="
-              font-family: &quot;Poppins&quot;, sans-serif;
+              font-family: 'Poppins', sans-serif;
               font-size: 24px;
               cursor: pointer;
             "
@@ -32,10 +29,7 @@
             to="/home"
             class="nav-btn"
             :class="{ 'active-link': $route.path === '/home' }"
-            style="
-              font-family: &quot;Poppins&quot;, sans-serif;
-              font-size: 16px;
-            "
+            style="font-family: 'Poppins', sans-serif; font-size: 16px"
           >
             <v-icon class="nav-icon">mdi-home</v-icon> Home
           </v-btn>
@@ -46,10 +40,7 @@
                 text
                 class="nav-btn"
                 v-bind="props"
-                style="
-                  font-family: &quot;Poppins&quot;, sans-serif;
-                  font-size: 16px;
-                "
+                style="font-family: 'Poppins', sans-serif; font-size: 16px"
               >
                 <v-icon class="nav-icon">mdi-tools</v-icon> Tools
                 <v-icon>mdi-chevron-down</v-icon>
@@ -94,10 +85,7 @@
             to="/resources"
             class="nav-btn"
             :class="{ 'active-link': $route.path === '/resources' }"
-            style="
-              font-family: &quot;Poppins&quot;, sans-serif;
-              font-size: 16px;
-            "
+            style="font-family: 'Poppins', sans-serif; font-size: 16px"
           >
             <v-icon class="nav-icon">mdi-link-variant</v-icon> Resources
           </v-btn>
@@ -107,10 +95,7 @@
             to="/profile"
             class="nav-btn"
             :class="{ 'active-link': $route.path === '/profile' }"
-            style="
-              font-family: &quot;Poppins&quot;, sans-serif;
-              font-size: 16px;
-            "
+            style="font-family: 'Poppins', sans-serif; font-size: 16px"
           >
             <v-icon class="nav-icon">mdi-account</v-icon> Profile
           </v-btn>
@@ -119,10 +104,7 @@
             to="/register"
             class="nav-btn"
             :class="{ 'active-link': $route.path === '/register' }"
-            style="
-              font-family: &quot;Poppins&quot;, sans-serif;
-              font-size: 16px;
-            "
+            style="font-family: 'Poppins', sans-serif; font-size: 16px"
           >
             <v-icon class="nav-icon">mdi-account-plus</v-icon> Register
           </v-btn>
@@ -132,10 +114,7 @@
             to="/login"
             class="nav-btn"
             :class="{ 'active-link': $route.path === '/login' }"
-            style="
-              font-family: &quot;Poppins&quot;, sans-serif;
-              font-size: 16px;
-            "
+            style="font-family: 'Poppins', sans-serif; font-size: 16px"
           >
             <v-icon class="nav-icon">mdi-login</v-icon> Login
           </v-btn>
@@ -144,10 +123,7 @@
             text
             @click="logout"
             class="nav-btn logout-btn"
-            style="
-              font-family: &quot;Poppins&quot;, sans-serif;
-              font-size: 16px;
-            "
+            style="font-family: 'Poppins', sans-serif; font-size: 16px"
           >
             <v-icon class="nav-icon">mdi-logout</v-icon> Logout
           </v-btn>
@@ -180,7 +156,7 @@
           <v-icon class="mobile-nav-icon">mdi-home</v-icon>
         </v-list-item-icon>
         <v-list-item-content
-          style="font-family: &quot;Poppins&quot;, sans-serif; font-size: 16px"
+          style="font-family: 'Poppins', sans-serif; font-size: 16px"
           >Home</v-list-item-content
         >
       </v-list-item>
@@ -192,10 +168,7 @@
               <v-icon class="mobile-nav-icon">mdi-tools</v-icon>
             </v-list-item-icon>
             <v-list-item-content
-              style="
-                font-family: &quot;Poppins&quot;, sans-serif;
-                font-size: 16px;
-              "
+              style="font-family: 'Poppins', sans-serif; font-size: 16px"
               >Study Tools</v-list-item-content
             >
           </v-list-item>
@@ -242,7 +215,7 @@
           <v-icon class="mobile-nav-icon">mdi-link-variant</v-icon>
         </v-list-item-icon>
         <v-list-item-content
-          style="font-family: &quot;Poppins&quot;, sans-serif; font-size: 16px"
+          style="font-family: 'Poppins', sans-serif; font-size: 16px"
           >Resources</v-list-item-content
         >
       </v-list-item>
@@ -252,7 +225,7 @@
           <v-icon class="mobile-nav-icon">mdi-account</v-icon>
         </v-list-item-icon>
         <v-list-item-content
-          style="font-family: &quot;Poppins&quot;, sans-serif; font-size: 16px"
+          style="font-family: 'Poppins', sans-serif; font-size: 16px"
           >Profile</v-list-item-content
         >
       </v-list-item>
@@ -262,7 +235,7 @@
           <v-icon class="mobile-nav-icon">mdi-account-plus</v-icon>
         </v-list-item-icon>
         <v-list-item-content
-          style="font-family: &quot;Poppins&quot;, sans-serif; font-size: 16px"
+          style="font-family: 'Poppins', sans-serif; font-size: 16px"
           >Register</v-list-item-content
         >
       </v-list-item>
@@ -277,7 +250,7 @@
           <v-icon class="mobile-nav-icon">mdi-login</v-icon>
         </v-list-item-icon>
         <v-list-item-content
-          style="font-family: &quot;Poppins&quot;, sans-serif; font-size: 16px"
+          style="font-family: 'Poppins', sans-serif; font-size: 16px"
           >Login</v-list-item-content
         >
       </v-list-item>
@@ -291,7 +264,7 @@
           <v-icon class="mobile-nav-icon">mdi-logout</v-icon>
         </v-list-item-icon>
         <v-list-item-content
-          style="font-family: &quot;Poppins&quot;, sans-serif; font-size: 16px"
+          style="font-family: 'Poppins', sans-serif; font-size: 16px"
           >Logout</v-list-item-content
         >
       </v-list-item>
@@ -301,7 +274,7 @@
 
 <script>
 import { mapGetters, mapActions } from "vuex";
-import axios from "axios"; // Assuming Axios is used for HTTP requests
+import api from "@/api";
 
 export default {
   data() {
@@ -333,12 +306,9 @@ export default {
       }
 
       try {
-        await axios.get(
-          "https://studysync-backend-api.vercel.app/api/profile",
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
+        await api.get("/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
       } catch (error) {
         console.error("Token validation failed:", error.message);
 

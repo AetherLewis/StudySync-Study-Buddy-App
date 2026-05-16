@@ -202,7 +202,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "@/api";
 import { mapState } from "vuex";
 
 export default {
@@ -258,14 +258,11 @@ export default {
       }
 
       try {
-        const { data } = await axios.get(
-          "https://studysync-backend-api.vercel.app/api/profile",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+        const { data } = await api.get("/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-        );
+        });
         this.user = data.user;
         this.isLoading = false;
       } catch (error) {
@@ -283,8 +280,8 @@ export default {
       const token = localStorage.getItem("token");
       this.isSaving = true;
       try {
-        await axios.put(
-          "https://studysync-backend-api.vercel.app/api/profile",
+        await api.put(
+          "/profile",
           { name: this.newName },
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -304,8 +301,8 @@ export default {
       const token = localStorage.getItem("token");
       this.isSaving = true;
       try {
-        await axios.put(
-          "https://studysync-backend-api.vercel.app/api/profile",
+        await api.put(
+          "/profile",
           { avatar: this.newAvatar },
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -328,8 +325,8 @@ export default {
         .split(",")
         .map((item) => item.trim());
       try {
-        await axios.put(
-          "https://studysync-backend-api.vercel.app/api/profile",
+        await api.put(
+          "/profile",
           { interests: updatedInterests },
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -349,8 +346,8 @@ export default {
       const token = localStorage.getItem("token");
       this.isSaving = true;
       try {
-        await axios.put(
-          "https://studysync-backend-api.vercel.app/api/profile",
+        await api.put(
+          "/profile",
           { mood: this.newMood },
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -373,8 +370,8 @@ export default {
         .split(",")
         .map((item) => item.trim());
       try {
-        await axios.put(
-          "https://studysync-backend-api.vercel.app/api/profile",
+        await api.put(
+          "/profile",
           { availableTimes: updatedTimes },
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -397,8 +394,8 @@ export default {
         .split(",")
         .map((item) => item.trim());
       try {
-        await axios.put(
-          "https://studysync-backend-api.vercel.app/api/profile",
+        await api.put(
+          "/profile",
           { courses: updatedCourses },
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -420,8 +417,8 @@ export default {
         .split(",")
         .map((item) => item.trim());
       try {
-        await axios.put(
-          "https://studysync-backend-api.vercel.app/api/profile",
+        await api.put(
+          "/profile",
           { groups: updatedGroups },
           { headers: { Authorization: `Bearer ${token}` } },
         );

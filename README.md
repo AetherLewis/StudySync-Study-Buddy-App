@@ -37,7 +37,7 @@ Welcome to **StudySync**! StudySync is a productivity and study tool designed to
 ![JSDoc](https://img.shields.io/badge/JSDoc-6BA539?style=for-the-badge&logo=javascript&logoColor=white)
 ![Spotify API](https://img.shields.io/badge/Spotify_API-1ED760?style=for-the-badge&logo=spotify&logoColor=white)
 ![OpenWeather API](https://img.shields.io/badge/OpenWeather_API-E96E50?style=for-the-badge&logo=weatherapi&logoColor=white)
-![Google Gemini AI](https://img.shields.io/badge/Google_Gemini_AI-8E75B2?style=for-the-badge&logo=google&logoColor=white)
+![Ollama](https://img.shields.io/badge/Ollama-000000?style=for-the-badge&logo=openai&logoColor=white)
 ![Docker](https://img.shields.io/badge/Docker-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Docker Compose](https://img.shields.io/badge/Docker_Compose-2496ED?style=for-the-badge&logo=docker&logoColor=white)
 ![Kubernetes](https://img.shields.io/badge/Kubernetes-326CE5?style=for-the-badge&logo=kubernetes&logoColor=white)
@@ -73,6 +73,11 @@ Welcome to **StudySync**! StudySync is a productivity and study tool designed to
 - [NGINX Configuration](#nginx-configuration)
 - [Docker Configuration](#docker-configuration)
   - [Building the Docker Containers](#building-the-docker-containers)
+- [Ollama AI Integration](#ollama-ai-integration)
+  - [Setup Options](#setup-options)
+  - [Supported Models](#supported-models)
+  - [Environment Variables](#environment-variables)
+  - [AI Chat Configuration](#ai-chat-configuration)
 - [The Creator](#the-creator)
 
 ## Features
@@ -99,14 +104,24 @@ All the features of the StudySync app include:
 - **Fully Responsive**: Works on all devices and screen sizes.
 - **And More!**: Explore the app for additional features and tools.
 
-## Live Deployment
+## Live Deployment & Local Development
 
+### Production Deployment
 The app is currently live at [https://study-sync-app.vercel.app/](https://study-sync-app.vercel.app/). You can explore the various features and functionalities of the app, including the Pomodoro timer, music recommendations, weather checks, and AI chat assistance.
 
 The backend API is hosted on Render at [https://studysync-study-buddy-app.onrender.com](https://studysync-study-buddy-app.onrender.com/). The frontend is hosted on Vercel and communicates with the backend API for data retrieval and storage.
 
 > [!IMPORTANT]
-> **Note**: The app may take a while to spin up, which means it may take 2-3 minutes (max) to load the backend logic. This is due to Render's free tier resource limit, where we are only allocated 0.1 CPU and 512MB RAM. Thank you for your understanding!
+> **Production Note**: The app may take a while to spin up, which means it may take 2-3 minutes (max) to load the backend logic. This is due to Render's free tier resource limit, where we are only allocated 0.1 CPU and 512MB RAM. Thank you for your understanding!
+
+### Local Development
+**As of May 2026**, the application has been **migrated to run locally** with the following architecture:
+- **Frontend**: `localhost:8081` (Vue.js + Vuetify)
+- **Backend**: `localhost:3001` (Node.js + Express)
+- **AI Service**: Self-hosted **Ollama** via **ngrok** (for Google Colab integration)
+- **Database**: MongoDB (Atlas or local)
+
+All API calls now use **environment variables** to configure the backend URL, eliminating hardcoded URLs and enabling seamless local development.
 
 ## UI Screenshots
 
@@ -201,7 +216,7 @@ Here are some UI screenshots for the app:
 - **JWT** (Authentication)
 - **Spotify API** (for music recommendations)
 - **OpenWeather API** (for weather data)
-- **Gemini API** (for AI chat functionality)
+- **Ollama** (for local/self-hosted AI chat functionality)
 - **Swagger** (API Documentation)
 - **OpenAPI** (API Specification)
 - **Nginx** (Reverse Proxy & Load Balancer)
@@ -209,7 +224,7 @@ Here are some UI screenshots for the app:
 ### DevOps & Deployment
 
 - **Git and GitHub** for version control
-- **Google Gemini** (for AI chat functionality)
+- **Ollama** (for local/self-hosted AI chat functionality)
 - **OpenWeather API** (for weather data)
 - **Docker** (for containerization)
 - **Jenkins** (for CI/CD)
@@ -234,21 +249,36 @@ To get started with **StudySync**, you can follow the setup instructions below. 
      npm install
      ```
    - Set up environment variables by creating a `.env` file:
-     ```
+     ```bash
+     # MongoDB Configuration
+     MONGO_URI=mongodb+srv://<username>:<password>@cluster.mongodb.net/?appName=Cluster0
+     
+     # JWT Secret (use a strong random string)
+     JWT_SECRET=your-super-secret-jwt-key-2024
+     
+     # Spotify API Credentials
      SPOTIFY_CLIENT_ID=<your-spotify-client-id>
      SPOTIFY_CLIENT_SECRET=<your-spotify-client-secret>
+     
+     # OpenWeather API Key
      OPENWEATHER_API_KEY=<your-openweather-api-key>
-     JWT_SECRET=<your-jwt-secret>
-     GEMINI_API_TOKEN=<your-gemini-api-token>
-     PORT=5000
-     MONGO_URI=<your-mongo-uri>
-     AI_INSTRUCTION=<your-ai-instruction>
+     
+     # Ollama AI Configuration
+     OLLAMA_BASE_URL=<your-ollama-base-url>  # e.g., https://random-words.ngrok-free.dev
+     OLLAMA_MODEL=<your-ollama-model>        # e.g., phi4-mini, mistral, llama2
+     
+     # Server Configuration
+     PORT=3001
+     NODE_ENV=development
+     
+     # AI Instructions
+     AI_INSTRUCTIONS=You are a helpful study assistant. Help students with their questions and provide clear, concise explanations.
      ```
    - Start the backend server:
      ```bash
      npm start
      ```
-   - The backend server will start on `http://localhost:5000`.
+   - The backend server will start on `http://localhost:3001`.
 3. **Set up the frontend**:
 
    - Navigate to the `frontend` directory:
@@ -260,8 +290,10 @@ To get started with **StudySync**, you can follow the setup instructions below. 
      npm install
      ```
    - Set up the frontend `.env` file with the API base URL:
-     ```
-     VUE_APP_API_URL=http://localhost:5000/api
+     ```bash
+     VUE_APP_API_URL=http://localhost:3001/api
+     VUE_APP_BACKEND_URL=http://localhost:3001
+     NODE_ENV=development
      ```
    - Start the frontend development server:
      ```bash
@@ -276,6 +308,67 @@ To get started with **StudySync**, you can follow the setup instructions below. 
 5. **Contribute**:
 
    If you would like to contribute to the project, feel free to fork the repository and submit a pull request with your changes. We welcome contributions from the community!
+
+## API Configuration & Environment Setup
+
+### Frontend-Backend Communication
+
+All frontend API calls are configured through the `VUE_APP_API_URL` environment variable. This ensures:
+- ✅ **No hardcoded URLs** — All API endpoints are dynamically driven by env vars
+- ✅ **Easy switching** — Change between localhost and production without code changes
+- ✅ **Centralized configuration** — Uses `src/api.js` module with automatic JWT token injection
+
+### Frontend Configuration (`frontend/study-sync-app/.env`)
+
+```bash
+# API URLs (adjust based on environment)
+VUE_APP_API_URL=http://localhost:3001/api
+VUE_APP_BACKEND_URL=http://localhost:3001
+
+# Environment
+NODE_ENV=development
+```
+
+### Backend Configuration (`backend/.env`)
+
+```bash
+# Server Port
+PORT=3001
+NODE_ENV=development
+
+# Database
+MONGO_URI=<your-mongodb-connection-string>
+
+# Authentication
+JWT_SECRET=<strong-random-secret-key>
+
+# Third-Party APIs
+SPOTIFY_CLIENT_ID=<spotify-id>
+SPOTIFY_CLIENT_SECRET=<spotify-secret>
+OPENWEATHER_API_KEY=<openweather-key>
+
+# AI Service (Ollama)
+OLLAMA_BASE_URL=http://localhost:11434
+OLLAMA_MODEL=mistral
+AI_INSTRUCTIONS=You are a helpful study assistant...
+```
+
+### How It Works
+
+1. **Frontend** loads `VUE_APP_API_URL` from `.env`
+2. **API Module** (`src/api.js`) creates axios instance with this base URL
+3. **All Components** import and use the `api` module (no direct axios calls)
+4. **Auth Interceptor** automatically adds JWT token to every request
+5. **Error Handler** catches 401s and redirects to login
+
+Example component usage:
+```javascript
+import api from '@/api';
+
+// All requests go to http://localhost:3001/api/...
+const response = await api.get('/profile');
+const musicData = await api.get('/music?searchTerm=study');
+```
 
 ## File Structure
 
@@ -367,7 +460,7 @@ StudySync-Study-Buddy-App/
 
 ### Backend Swagger Documentation
 
-The backend API documentation is available at `http://localhost:5000/api-docs` after starting the backend server. The Swagger UI provides a detailed overview of the API endpoints, request parameters, and response data.
+The backend API documentation is available at `http://localhost:3001/api-docs` after starting the backend server. The Swagger UI provides a detailed overview of the API endpoints, request parameters, and response data.
 
 <p align="center">
   <img src="img/swagger_ui.png" alt="Swagger UI" width="100%">
@@ -390,8 +483,7 @@ The backend API documentation is available at `http://localhost:5000/api-docs` a
   - Test the API endpoints directly from Postman.
 - Or use [Swagger UI](https://swagger.io/tools/swagger-ui/):
   - Provide the file URL or upload it to view and test endpoints.
-
-3. **Generate Client Libraries**
+   - Or access it directly from your local backend at: `http://localhost:3001/api-docs`
 
 - Install OpenAPI Generator:
   ```bash
@@ -447,7 +539,7 @@ server {
     server_name localhost;
 
     location / {
-        proxy_pass http://localhost:5000;
+        proxy_pass http://localhost:3001;
         proxy_http_version 1.1;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection 'upgrade';
@@ -457,7 +549,7 @@ server {
 }
 ```
 
-The NGINX configuration file sets up a reverse proxy to the backend server running on `http://localhost:5000`. It listens on port 80 and forwards all requests to the backend server.
+The NGINX configuration file sets up a reverse proxy to the backend server running on `http://localhost:3001`. It listens on port 80 and forwards all requests to the backend server.
 
 ## Docker Configuration
 
@@ -472,6 +564,126 @@ docker compose up --build
 ```
 
 This command will build the Docker images for the backend and frontend and run the containers. You can access the app at `http://localhost:8081` after the containers are up and running.
+
+## Ollama AI Integration
+
+**StudySync** has been upgraded to use **Ollama** — an open-source, self-hosted AI chat backend — replacing the Google Gemini API for improved privacy and customization.
+
+### Setup Options
+
+#### Option 1: Local Ollama Installation (Recommended for Development)
+
+1. **Install Ollama**: Download and install from [ollama.com](https://ollama.com)
+
+2. **Run Ollama Locally**:
+   ```bash
+   ollama serve
+   ```
+   Ollama will start on `http://localhost:11434`
+
+3. **Pull a Model**:
+   ```bash
+   ollama pull mistral    # Fast, general-purpose
+   # OR
+   ollama pull phi4-mini  # Lightweight alternative
+   # OR
+   ollama pull neural-chat  # Conversation-optimized
+   ```
+
+4. **Configure StudySync**: Update `.env` in the backend directory:
+   ```bash
+   OLLAMA_BASE_URL=http://localhost:11434
+   OLLAMA_MODEL=mistral
+   ```
+
+5. **Start Backend & Frontend**:
+   ```bash
+   # Terminal 1: Backend
+   cd backend && npm start  # runs on localhost:3001
+   
+   # Terminal 2: Frontend  
+   cd frontend/study-sync-app && npm run serve  # runs on localhost:8081
+   ```
+
+#### Option 2: Google Colab with ngrok (No Local GPU Needed)
+
+**Best for**: Users without a local GPU or wanting free compute
+
+1. **Open the Notebook**: Use [studysync_ollama.ipynb](studysync_ollama%20(1).ipynb) in Google Colab
+
+2. **Follow the Colab Setup**:
+   - The notebook installs Ollama
+   - Pulls your chosen model
+   - Starts the Ollama server
+   - Exposes it via **ngrok** tunnel (publicly accessible)
+
+3. **Copy ngrok URL**: From Colab output, copy the ENDPOINT line:
+   ```
+   Example: https://random-brethren-willfully.ngrok-free.dev
+   ```
+
+4. **Update Backend `.env`**:
+   ```bash
+   OLLAMA_BASE_URL=https://random-brethren-willfully.ngrok-free.dev
+   OLLAMA_MODEL=phi4-mini
+   ```
+
+5. **Use the `start.sh` Script** (Automated Setup):
+   ```bash
+   ./start.sh
+   # Prompts for Ollama URL, sets up both backend and frontend
+   ```
+
+### Supported Models
+
+Popular models optimized for study assistance:
+
+| Model | Size | Speed | Best For |
+| --- | --- | --- | --- |
+| `phi4-mini` | ~2.7GB | Very Fast | Quick responses, low resource |
+| `mistral` | ~4.1GB | Fast | Balanced performance |
+| `neural-chat` | ~4GB | Fast | Conversation & instruction-following |
+| `dolphin-mixtral` | ~26GB | Slower | Advanced reasoning & analysis |
+| `llama2` | ~3.8GB | Fast | General-purpose |
+
+See all available models at [ollama.com/library](https://ollama.com/library)
+
+### Environment Variables
+
+| Variable | Description | Example |
+| --- | --- | --- |
+| `OLLAMA_BASE_URL` | Base URL of Ollama server | `http://localhost:11434` or `https://your-ngrok-url` |
+| `OLLAMA_MODEL` | Model name to use | `mistral`, `phi4-mini`, `neural-chat` |
+| `MONGO_URI` | MongoDB connection string | `mongodb+srv://user:pass@cluster.mongodb.net/` |
+| `JWT_SECRET` | JWT signing secret | Any strong random string |
+
+### AI Chat Configuration
+
+The `AI_INSTRUCTIONS` environment variable controls the system prompt for the AI assistant:
+
+```env
+AI_INSTRUCTIONS=You are a helpful study assistant. Help students with their questions and provide clear, concise explanations. Focus on education and learning concepts.
+```
+
+### API Integration
+
+Frontend AI chat requests go to the backend `/ai-chat` endpoint, which:
+1. Receives the user message
+2. Sends it to your Ollama instance (local or ngrok)
+3. Streams/returns the AI response
+4. Formats it as markdown for the frontend
+
+Example request:
+```bash
+POST /api/ai-chat
+Authorization: Bearer <jwt-token>
+Content-Type: application/json
+
+{
+  "sessionId": "1",
+  "message": "How do I study effectively for exams?"
+}
+```
 
 ## The Creator
 

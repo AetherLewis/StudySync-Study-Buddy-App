@@ -497,7 +497,6 @@
 </template>
 
 <script>
-import axios from "axios";
 import api from "../api";
 import { mapState } from "vuex";
 import { marked } from "marked";
@@ -625,7 +624,9 @@ export default {
       const formattedTime = `${hours % 12 || 12}:${minutes}:${seconds} ${amPm}`;
 
       // Format the full date and time string
-      this.currentDateTime = `${dayOfWeek}, ${month} ${getOrdinalSuffix(day)}, ${year} - ${formattedTime}`;
+      this.currentDateTime = `${dayOfWeek}, ${month} ${getOrdinalSuffix(
+        day,
+      )}, ${year} - ${formattedTime}`;
     },
     async fetchCitySuggestions() {
       if (this.city.length < 2) {
@@ -633,11 +634,11 @@ export default {
         return;
       }
       try {
-        const response = await axios.get(
-          `https://studysync-backend-api.vercel.app/api/cities?query=${this.city}`,
-        );
+        const response = await api.get(`/cities?query=${this.city}`);
         this.citySuggestions = response.data.cities.map((city) => ({
-          displayName: `${city.name}, ${city.state ? city.state + ", " : ""}${city.country}`,
+          displayName: `${city.name}, ${city.state ? city.state + ", " : ""}${
+            city.country
+          }`,
           fullCity: city,
         }));
       } catch (error) {
@@ -659,14 +660,11 @@ export default {
         }
 
         // Make an API request to get the user's profile
-        const response = await axios.get(
-          "https://studysync-backend-api.vercel.app/api/profile",
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
+        const response = await api.get("/profile", {
+          headers: {
+            Authorization: `Bearer ${token}`,
           },
-        );
+        });
 
         // Check if response is successful and contains the user object
         if (response.data.success && response.data.user) {
@@ -747,7 +745,9 @@ export default {
           }
 
           // Update the timeLeft and progress dynamically
-          this.timeLeft = `${this.formatTime(this.minutes)}:${this.formatTime(this.seconds)}`;
+          this.timeLeft = `${this.formatTime(this.minutes)}:${this.formatTime(
+            this.seconds,
+          )}`;
           this.progress = this.progressCircleOffset; // Update the progress value
         }
       }, 1000);
@@ -796,12 +796,9 @@ export default {
           console.error("No token found");
           return;
         }
-        const response = await axios.get(
-          `https://studysync-backend-api.vercel.app/api/music?searchTerm=${this.mood}`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          },
-        );
+        const response = await api.get(`/music?searchTerm=${this.mood}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
         if (response.data.success) {
           this.musicRecommendations = response.data.recommendations;
         } else {
@@ -837,9 +834,7 @@ export default {
         }
 
         // Call the backend API for weather data
-        const response = await axios.get(
-          `https://studysync-backend-api.vercel.app/api/weather?city=${this.city}`,
-        );
+        const response = await api.get(`/weather?city=${this.city}`);
 
         // Check if the response was successful and contains data
         if (response.data.success && response.data.data) {
@@ -1093,7 +1088,9 @@ export default {
         const hours = Math.floor(this.trackingSeconds / 3600);
         const minutes = Math.floor((this.trackingSeconds % 3600) / 60);
         const seconds = this.trackingSeconds % 60;
-        this.trackedTime = `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+        this.trackedTime = `${String(hours).padStart(2, "0")}:${String(
+          minutes,
+        ).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
       }, 1000);
     },
     stopTimeTracking() {
@@ -1322,9 +1319,7 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
   min-height: 400px; /* Minimum height to ensure space for content */
   overflow: hidden; /* Prevent content overflow outside the card */
 }
@@ -1364,9 +1359,7 @@ export default {
   padding: 1em;
   border-radius: 8px;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-  transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .music-track:hover {
@@ -1434,9 +1427,7 @@ export default {
   text-decoration: none;
   font-size: 0.9em;
   margin-top: 1em;
-  transition:
-    background 0.3s ease,
-    transform 0.3s ease;
+  transition: background 0.3s ease, transform 0.3s ease;
 }
 
 .spotify-button:hover {

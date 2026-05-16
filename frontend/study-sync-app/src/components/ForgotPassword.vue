@@ -86,7 +86,7 @@
 </template>
 
 <script>
-import axios from "axios";
+import api from "@/api";
 
 export default {
   data() {
@@ -106,10 +106,9 @@ export default {
     },
     async verifyEmail() {
       try {
-        const response = await axios.post(
-          "https://studysync-backend-api.vercel.app/api/auth/verify-email",
-          { email: this.email },
-        );
+        const response = await api.post("/auth/verify-email", {
+          email: this.email,
+        });
 
         if (response.data.exists) {
           this.emailVerified = true;
@@ -130,10 +129,10 @@ export default {
       }
 
       try {
-        await axios.post(
-          "https://studysync-backend-api.vercel.app/api/auth/reset-password",
-          { email: this.email, newPassword: this.newPassword },
-        );
+        await api.post("/auth/reset-password", {
+          email: this.email,
+          newPassword: this.newPassword,
+        });
 
         this.successMessage =
           "Password reset successfully. Redirecting to login...";
@@ -165,9 +164,7 @@ export default {
 .forgot-password-card {
   border-radius: 12px;
   box-shadow: 0px 6px 18px rgba(0, 0, 0, 0.2);
-  transition:
-    transform 0.3s ease,
-    box-shadow 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
 .forgot-password-card:hover {
@@ -195,9 +192,7 @@ export default {
   font-size: 1em;
   color: white;
   text-transform: uppercase;
-  transition:
-    background-color 0.3s ease,
-    transform 0.2s ease;
+  transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
 .verify-btn:hover,
