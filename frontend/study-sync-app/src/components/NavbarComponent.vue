@@ -59,6 +59,12 @@
                   Quizzes
                 </v-list-item-title>
               </v-list-item>
+              <v-list-item to="/flashcards">
+                <v-list-item-title>
+                  <v-icon class="mr-2">mdi-flashcard-outline</v-icon>
+                  Flashcards
+                </v-list-item-title>
+              </v-list-item>
               <v-list-item to="/progress">
                 <v-list-item-title>
                   <v-icon class="mr-2">mdi-chart-line</v-icon>
@@ -186,6 +192,13 @@
             <v-icon class="mobile-nav-icon">mdi-file-question</v-icon>
           </v-list-item-icon>
           <v-list-item-content>Quizzes</v-list-item-content>
+        </v-list-item>
+
+        <v-list-item to="/flashcards" @click="closeDrawer">
+          <v-list-item-icon>
+            <v-icon class="mobile-nav-icon">mdi-flashcard-outline</v-icon>
+          </v-list-item-icon>
+          <v-list-item-content>Flashcards</v-list-item-content>
         </v-list-item>
 
         <v-list-item to="/progress" @click="closeDrawer">

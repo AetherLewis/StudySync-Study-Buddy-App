@@ -15,6 +15,7 @@
     "axios": "^1.7.7",
     "core-js": "^3.8.3",
     "marked": "^15.0.0",
+    "pdfjs-dist": "^5.7.284",
     "roboto-fontface": "*",
     "vue": "^3.5.12",
     "vue-router": "^4.0.13",

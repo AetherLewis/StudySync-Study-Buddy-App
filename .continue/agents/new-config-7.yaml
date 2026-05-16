@@ -1,0 +1,34 @@
+name: StudySync Local AI
+version: 1.0.0
+schema: v1
+
+models:
+  - title: qwen2.5-coder-3b
+    provider: ollama
+    model: qwen2.5-coder:3b
+    apiBase: https://random-brethren-willfully.ngrok-free.dev
+    contextLength: 4096
+    completionOptions:
+      temperature: 0.2
+      topP: 0.9
+      maxTokens: 1200
+
+  - title: llama3.1-8b
+    provider: ollama
+    model: llama3.1:8b
+
+  - title: nomic-embed
+    provider: ollama
+    model: nomic-embed-text:latest
+
+tabAutocompleteModel:
+  title: qwen2.5-coder-3b
+  provider: ollama
+  model: qwen2.5-coder:3b
+  apiBase: https://random-brethren-willfully.ngrok-free.dev
+
+context:
+  - provider: code
+  - provider: docs
+  - provider: diff
+  - provider: terminal

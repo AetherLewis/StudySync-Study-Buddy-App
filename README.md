@@ -698,3 +698,4 @@ We hope you enjoy using **StudySync**! For any issues or feature requests, feel 
 ---
 
 [Back to top](#studysync---a-productivity-and-study-companion-app)
+

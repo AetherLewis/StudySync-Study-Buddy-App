@@ -34,6 +34,18 @@
           <h3>Quizzes</h3>
           <p>Test your knowledge</p>
         </div>
+        <div class="access-card" @click="navigateTo('/flashcards')">
+          <div
+            class="access-icon"
+            style="
+              background: linear-gradient(135deg, #38bdf8 0%, #60a5fa 100%);
+            "
+          >
+            <v-icon size="32" color="white">mdi-flashcard-outline</v-icon>
+          </div>
+          <h3>Flashcards</h3>
+          <p>Build recall with SM-2 review</p>
+        </div>
         <div class="access-card" @click="navigateTo('/progress')">
           <div
             class="access-icon"

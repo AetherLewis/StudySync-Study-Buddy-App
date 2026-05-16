@@ -36,6 +36,149 @@
 
       <v-row class="mb-4">
         <v-col cols="12">
+          <v-card elevation="3" class="pa-4 mb-4">
+            <div class="d-flex align-center justify-space-between mb-3">
+              <div>
+                <h3 class="text-h6 mb-1">🤖 AI Learning Path Generator</h3>
+                <p class="text-body-2 mb-0">
+                  Create a personalized learning path with AI-generated
+                  milestones
+                </p>
+              </div>
+            </div>
+
+            <v-row class="mt-3">
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="pathGeneratorData.goalTitle"
+                  label="Learning Goal *"
+                  variant="outlined"
+                  placeholder="e.g., Learn Machine Learning"
+                />
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="pathGeneratorData.currentLevel"
+                  :items="['Beginner', 'Intermediate', 'Advanced']"
+                  label="Current Level"
+                  variant="outlined"
+                />
+              </v-col>
+            </v-row>
+
+            <v-row>
+              <v-col cols="12">
+                <v-textarea
+                  v-model="pathGeneratorData.goalDescription"
+                  label="Goal Description (optional)"
+                  rows="2"
+                  variant="outlined"
+                  placeholder="Add context about your learning goal..."
+                />
+              </v-col>
+            </v-row>
+
+            <v-row>
+              <v-col cols="12" md="6">
+                <v-select
+                  v-model="pathGeneratorData.timeframe"
+                  :items="[
+                    '14 days',
+                    '30 days',
+                    '60 days',
+                    '90 days',
+                    '6 months',
+                    '1 year',
+                  ]"
+                  label="Expected Timeframe"
+                  variant="outlined"
+                />
+              </v-col>
+              <v-col cols="12" md="6" class="d-flex align-center">
+                <v-btn
+                  color="secondary"
+                  :loading="generatingPath"
+                  :disabled="!pathGeneratorData.goalTitle.trim()"
+                  @click="generateLearningPath"
+                  prepend-icon="mdi-lightbulb"
+                  block
+                >
+                  Generate Learning Path
+                </v-btn>
+              </v-col>
+            </v-row>
+
+            <v-expand-transition>
+              <div v-if="generatedPath" class="mt-6 pt-4 border-top">
+                <h4 class="text-h6 mb-4">{{ generatedPath.title }}</h4>
+                <p class="text-body-2 mb-4">{{ generatedPath.description }}</p>
+                <p class="text-caption">
+                  <strong>Estimated Duration:</strong>
+                  {{ generatedPath.estimatedDays }} days
+                </p>
+
+                <v-timeline class="mt-4" align="start">
+                  <v-timeline-item
+                    v-for="(milestone, index) in generatedPath.milestones"
+                    :key="index"
+                    :icon="`mdi-numeric-${index + 1}-circle`"
+                    fill-dot
+                  >
+                    <template #opposite>
+                      <span class="text-caption"
+                        >{{ milestone.daysToComplete }} days</span
+                      >
+                    </template>
+                    <v-card class="mt-0">
+                      <v-card-title class="text-body-1">
+                        {{ milestone.title }}
+                      </v-card-title>
+                      <v-card-text>
+                        <p class="text-body-2 mb-2">
+                          {{ milestone.description }}
+                        </p>
+                        <div v-if="milestone.resources.length > 0" class="mt-3">
+                          <strong class="text-caption">Resources:</strong>
+                          <div class="mt-1">
+                            <v-chip
+                              v-for="(resource, ridx) in milestone.resources"
+                              :key="ridx"
+                              size="small"
+                              variant="outlined"
+                              class="mr-1 mb-1"
+                            >
+                              {{ resource }}
+                            </v-chip>
+                          </div>
+                        </div>
+                      </v-card-text>
+                    </v-card>
+                  </v-timeline-item>
+                </v-timeline>
+
+                <v-row class="mt-6">
+                  <v-col class="d-flex justify-end gap-2">
+                    <v-btn variant="outlined" color="grey" @click="discardPath">
+                      Discard
+                    </v-btn>
+                    <v-btn
+                      color="primary"
+                      variant="elevated"
+                      @click="saveLearningPath"
+                      prepend-icon="mdi-check"
+                    >
+                      Save to Calendar
+                    </v-btn>
+                  </v-col>
+                </v-row>
+              </div>
+            </v-expand-transition>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <v-row class="mb-4">
+        <v-col cols="12">
           <v-btn
             color="primary"
             size="large"
@@ -276,6 +419,7 @@
 
 <script>
 import api from "../api";
+import config from "../config";
 import { mapState } from "vuex";
 
 export default {
@@ -299,6 +443,14 @@ export default {
       editMode: false,
       selectedGoal: null,
       updateProgressValue: 0,
+      generatingPath: false,
+      generatedPath: null,
+      pathGeneratorData: {
+        goalTitle: "",
+        goalDescription: "",
+        currentLevel: "Beginner",
+        timeframe: "30 days",
+      },
       formData: {
         title: "",
         description: "",
@@ -484,6 +636,75 @@ export default {
       this.snackbarColor = color;
       this.snackbar = true;
     },
+    async generateLearningPath() {
+      if (!this.pathGeneratorData.goalTitle.trim()) {
+        this.showSnackbar("Please enter a learning goal", "error");
+        return;
+      }
+
+      this.generatingPath = true;
+      this.generatedPath = null;
+
+      try {
+        const response = await api.post(
+          config.API_ENDPOINTS.LEARNING_PATHS_PREVIEW,
+          this.pathGeneratorData,
+        );
+
+        if (response.data.success) {
+          this.generatedPath = response.data.path;
+          this.showSnackbar(
+            "Learning path generated! Review and save.",
+            "success",
+          );
+        } else {
+          this.showSnackbar(
+            response.data.message || "Failed to generate learning path",
+            "error",
+          );
+        }
+      } catch (error) {
+        this.showSnackbar("Error generating learning path", "error");
+        console.error(error);
+      } finally {
+        this.generatingPath = false;
+      }
+    },
+    async saveLearningPath() {
+      if (!this.generatedPath) return;
+
+      try {
+        const response = await api.post(
+          config.API_ENDPOINTS.LEARNING_PATHS_GENERATE,
+          this.pathGeneratorData,
+        );
+
+        if (response.data.success) {
+          this.showSnackbar(
+            `Learning path saved! ${response.data.eventsCreated} milestones added to calendar`,
+            "success",
+          );
+          this.generatedPath = null;
+          this.pathGeneratorData = {
+            goalTitle: "",
+            goalDescription: "",
+            currentLevel: "Beginner",
+            timeframe: "30 days",
+          };
+        } else {
+          this.showSnackbar(
+            response.data.message || "Failed to save learning path",
+            "error",
+          );
+        }
+      } catch (error) {
+        this.showSnackbar("Error saving learning path", "error");
+        console.error(error);
+      }
+    },
+    discardPath() {
+      this.generatedPath = null;
+    },
   },
 };
 </script>
@@ -553,5 +774,13 @@ export default {
   background: #f5f5f5;
   padding: 1em;
   border-radius: 8px;
+}
+
+.border-top {
+  border-top: 2px solid rgba(0, 0, 0, 0.12);
+}
+
+.gap-2 {
+  gap: 0.5rem;
 }
 </style>

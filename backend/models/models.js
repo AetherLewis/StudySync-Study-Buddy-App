@@ -59,6 +59,22 @@ const quizSchema = new mongoose.Schema({
   ],
 });
 
+const flashcardSchema = new mongoose.Schema({
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  front: { type: String, required: true },
+  back: { type: String, required: true },
+  category: { type: String, default: "General" },
+  tags: { type: [String], default: [] },
+  dueDate: { type: Date, default: Date.now },
+  interval: { type: Number, default: 1 },
+  easeFactor: { type: Number, default: 2.5 },
+  repetition: { type: Number, default: 0 },
+  reviewCount: { type: Number, default: 0 },
+  lastReviewed: { type: Date, default: null },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
+
 const studySessionSchema = new mongoose.Schema({
   userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   subject: { type: String, required: true },
@@ -97,6 +113,7 @@ const StudyMaterial = mongoose.model("StudyMaterial", studyMaterialSchema);
 const Quiz = mongoose.model("Quiz", quizSchema);
 const StudySession = mongoose.model("StudySession", studySessionSchema);
 const Goal = mongoose.model("Goal", goalSchema);
+const Flashcard = mongoose.model("Flashcard", flashcardSchema);
 const Event = mongoose.model("Event", eventSchema);
 
 module.exports = {
@@ -107,4 +124,5 @@ module.exports = {
   StudySession,
   Goal,
   Event,
+  Flashcard,
 };

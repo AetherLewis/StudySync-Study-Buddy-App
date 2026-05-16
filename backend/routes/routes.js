@@ -23,6 +23,16 @@ router.get("/music", authMiddleware, controller.getMusic);
 router.post("/ai-chat", authMiddleware, controller.aiChat);
 
 router.post("/study-materials", authMiddleware, controller.createStudyMaterial);
+router.post(
+  "/study-materials/generate-preview",
+  authMiddleware,
+  controller.previewStudyMaterial,
+);
+router.post(
+  "/study-materials/generate",
+  authMiddleware,
+  controller.generateStudyMaterial,
+);
 router.get("/study-materials", authMiddleware, controller.getStudyMaterials);
 router.put(
   "/study-materials/:id",
@@ -37,12 +47,28 @@ router.delete(
 
 router.post("/quizzes", authMiddleware, controller.createQuiz);
 router.get("/quizzes", authMiddleware, controller.getQuizzes);
+router.post("/quizzes/generate", authMiddleware, controller.generateQuiz);
 router.post(
   "/quizzes/:id/attempt",
   authMiddleware,
   controller.submitQuizAttempt,
 );
 router.delete("/quizzes/:id", authMiddleware, controller.deleteQuiz);
+
+router.post("/flashcards", authMiddleware, controller.createFlashcard);
+router.get("/flashcards", authMiddleware, controller.getFlashcards);
+router.put("/flashcards/:id", authMiddleware, controller.updateFlashcard);
+router.delete("/flashcards/:id", authMiddleware, controller.deleteFlashcard);
+router.post(
+  "/flashcards/:id/review",
+  authMiddleware,
+  controller.reviewFlashcard,
+);
+router.post(
+  "/flashcards/generate",
+  authMiddleware,
+  controller.generateFlashcards,
+);
 
 router.post("/study-sessions", authMiddleware, controller.logStudySession);
 router.get("/study-sessions", authMiddleware, controller.getStudySessions);
@@ -53,8 +79,26 @@ router.put("/goals/:id", authMiddleware, controller.updateGoal);
 router.delete("/goals/:id", authMiddleware, controller.deleteGoal);
 
 router.post("/events", authMiddleware, controller.createEvent);
+router.post("/events/generate", authMiddleware, controller.generateStudyPlan);
 router.get("/events", authMiddleware, controller.getEvents);
 router.put("/events/:id", authMiddleware, controller.updateEvent);
 router.delete("/events/:id", authMiddleware, controller.deleteEvent);
+
+router.post(
+  "/learning-paths/preview",
+  authMiddleware,
+  controller.previewLearningPath,
+);
+router.post(
+  "/learning-paths/generate",
+  authMiddleware,
+  controller.generateLearningPath,
+);
+
+router.get(
+  "/resources/recommendations",
+  authMiddleware,
+  controller.getResourceRecommendations,
+);
 
 module.exports = router;

@@ -9,6 +9,7 @@ import LandingPage from "@/components/LandingPage.vue";
 import ForgotPassword from "@/components/ForgotPassword.vue";
 import StudyMaterialsPage from "../views/StudyMaterialsPage.vue";
 import QuizPage from "../views/QuizPage.vue";
+import FlashcardsPage from "../views/FlashcardsPage.vue";
 import ProgressTrackerPage from "../views/ProgressTrackerPage.vue";
 import GoalsPage from "../views/GoalsPage.vue";
 import StudyPlannerPage from "../views/StudyPlannerPage.vue";
@@ -36,6 +37,11 @@ const routes = [
     meta: { requiresAuth: true },
   },
   { path: "/quizzes", component: QuizPage, meta: { requiresAuth: true } },
+  {
+    path: "/flashcards",
+    component: FlashcardsPage,
+    meta: { requiresAuth: true },
+  },
   {
     path: "/progress",
     component: ProgressTrackerPage,

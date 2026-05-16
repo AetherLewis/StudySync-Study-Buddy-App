@@ -26,9 +26,14 @@ export const API_ENDPOINTS = {
 
   // Study Materials
   MATERIALS: `${API_BASE_URL}/study-materials`,
+  STUDY_MATERIALS_GENERATE: `${API_BASE_URL}/study-materials/generate`,
+  STUDY_MATERIALS_PREVIEW: `${API_BASE_URL}/study-materials/generate-preview`,
 
   // Quizzes
   QUIZZES: `${API_BASE_URL}/quizzes`,
+  QUIZZES_GENERATE: `${API_BASE_URL}/quizzes/generate`,
+  FLASHCARDS: `${API_BASE_URL}/flashcards`,
+  FLASHCARDS_GENERATE: `${API_BASE_URL}/flashcards/generate`,
 
   // Study Sessions
   SESSIONS: `${API_BASE_URL}/study-sessions`,
@@ -38,6 +43,14 @@ export const API_ENDPOINTS = {
 
   // Events (Planner)
   EVENTS: `${API_BASE_URL}/events`,
+  EVENTS_GENERATE: `${API_BASE_URL}/events/generate`,
+
+  // Learning Paths
+  LEARNING_PATHS_PREVIEW: `${API_BASE_URL}/learning-paths/preview`,
+  LEARNING_PATHS_GENERATE: `${API_BASE_URL}/learning-paths/generate`,
+
+  // Resource Recommendations
+  RESOURCES_RECOMMENDATIONS: `${API_BASE_URL}/resources/recommendations`,
 
   // External Services
   MUSIC: `${API_BASE_URL}/music`,

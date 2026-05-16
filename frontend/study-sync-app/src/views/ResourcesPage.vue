@@ -28,6 +28,109 @@
         </v-col>
       </v-row>
 
+      <v-row class="mb-6">
+        <v-col cols="12">
+          <v-card elevation="3" class="pa-4">
+            <div class="d-flex align-center justify-space-between">
+              <div>
+                <h3 class="text-h6 mb-1">✨ Personalized Recommendations</h3>
+                <p class="text-body-2 mb-0">
+                  AI-curated resources based on your learning goals and progress
+                </p>
+              </div>
+              <v-btn
+                color="secondary"
+                variant="outlined"
+                size="small"
+                :loading="loadingRecommendations"
+                @click="loadRecommendations"
+                prepend-icon="mdi-refresh"
+              >
+                Refresh
+              </v-btn>
+            </div>
+
+            <v-divider class="my-4" />
+
+            <v-row v-if="loadingRecommendations" class="justify-center">
+              <v-progress-circular indeterminate color="primary" size="48" />
+            </v-row>
+
+            <v-row v-else-if="recommendations.length > 0">
+              <v-col
+                v-for="(rec, idx) in recommendations"
+                :key="idx"
+                cols="12"
+                md="6"
+              >
+                <v-card class="recommendation-card" elevation="1" outlined>
+                  <v-card-title class="text-body-1">
+                    {{ rec.title }}
+                  </v-card-title>
+                  <v-card-subtitle>
+                    <div class="d-flex gap-2 flex-wrap mt-2">
+                      <v-chip size="x-small" :color="getTypeColor(rec.type)">
+                        {{ rec.type }}
+                      </v-chip>
+                      <v-chip size="x-small" color="info">
+                        {{ rec.difficulty }}
+                      </v-chip>
+                      <v-chip size="x-small" color="warning">
+                        {{ rec.estimatedTime }}
+                      </v-chip>
+                    </div>
+                  </v-card-subtitle>
+                  <v-card-text>
+                    <p class="text-body-2 mb-2">{{ rec.description }}</p>
+                    <p class="text-caption font-italic mb-3">
+                      <strong>Why recommended:</strong> {{ rec.reason }}
+                    </p>
+                    <div class="tags-section">
+                      <v-chip
+                        v-for="tag in rec.tags"
+                        :key="tag"
+                        size="x-small"
+                        class="mr-1 mb-1"
+                        variant="outlined"
+                      >
+                        {{ tag }}
+                      </v-chip>
+                    </div>
+                  </v-card-text>
+                  <v-card-actions>
+                    <v-btn
+                      :href="rec.url"
+                      target="_blank"
+                      color="primary"
+                      size="small"
+                      variant="elevated"
+                    >
+                      Visit Resource
+                    </v-btn>
+                    <v-spacer />
+                    <v-btn
+                      icon="mdi-heart-outline"
+                      size="small"
+                      variant="text"
+                      color="error"
+                    />
+                  </v-card-actions>
+                </v-card>
+              </v-col>
+            </v-row>
+
+            <v-row v-else>
+              <v-col cols="12" class="text-center">
+                <p class="text-body-2 text-grey">
+                  No recommendations available yet. Start a learning goal to get
+                  personalized recommendations!
+                </p>
+              </v-col>
+            </v-row>
+          </v-card>
+        </v-col>
+      </v-row>
+
       <v-row ref="resultsSection">
         <v-col
           v-for="resource in filteredResources"

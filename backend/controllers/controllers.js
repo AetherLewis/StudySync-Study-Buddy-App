@@ -11,6 +11,12 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const { successMessages, errorMessages } = require("../views/views");
 const { getMusicRecommendation, chatWithAI } = require("../services/services");
+const flashcardController = require("./flashcardController");
+const quizController = require("./quizController");
+const plannerController = require("./plannerController");
+const studyMaterialController = require("./studyMaterialController");
+const learningPathController = require("./learningPathController");
+const recommendationController = require("./recommendationController");
 const { get } = require("axios");
 
 /**
@@ -1400,3 +1406,10 @@ exports.deleteEvent = async (req, res) => {
     res.status(500).json({ success: false, message: "Server error" });
   }
 };
+
+Object.assign(exports, flashcardController);
+Object.assign(exports, quizController);
+Object.assign(exports, plannerController);
+Object.assign(exports, studyMaterialController);
+Object.assign(exports, learningPathController);
+Object.assign(exports, recommendationController);

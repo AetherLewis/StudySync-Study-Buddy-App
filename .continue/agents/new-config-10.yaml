@@ -1,0 +1,16 @@
+name: StudySync Local AI
+version: 1.0.0
+schema: v1
+
+models:
+  - title: Qwen 3B Remote
+    provider: ollama
+    model: qwen2.5-coder:3b
+    apiBase: https://random-brethren-willfully.ngrok-free.dev
+    contextLength: 4096
+    roles:
+      - chat
+      - edit
+      - apply
+
+defaultModel: Qwen 3B Remote

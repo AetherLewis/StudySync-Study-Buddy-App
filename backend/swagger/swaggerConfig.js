@@ -52,7 +52,7 @@ const options = {
   swaggerDefinition,
   apis: [
     path.join(__dirname, "../routes/routes.js"),
-    path.join(__dirname, "../controllers/controllers.js"),
+    path.join(__dirname, "../controllers/*.js"),
   ],
 };
 

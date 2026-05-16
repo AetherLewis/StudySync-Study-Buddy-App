@@ -128,6 +128,69 @@
             </v-form>
           </v-card>
 
+          <v-card elevation="3" class="pa-4 mb-4">
+            <v-card-title class="text-h6 mb-4"
+              >AI Generate Study Plan</v-card-title
+            >
+            <v-textarea
+              v-model="aiPlanPrompt"
+              label="Describe your study goals and availability"
+              variant="outlined"
+              rows="4"
+              density="compact"
+              clearable
+            />
+            <v-text-field
+              v-model="aiPlanStartDate"
+              label="Start Date"
+              type="date"
+              variant="outlined"
+              density="compact"
+            />
+            <v-text-field
+              v-model="aiPlanEndDate"
+              label="End Date"
+              type="date"
+              variant="outlined"
+              density="compact"
+            />
+            <v-text-field
+              v-model="aiDailyHours"
+              label="Hours per day"
+              type="number"
+              min="1"
+              max="8"
+              variant="outlined"
+              density="compact"
+            />
+            <v-btn
+              color="secondary"
+              block
+              :loading="generatingPlan"
+              :disabled="generatingPlan"
+              @click="generateStudyPlan"
+            >
+              Generate Plan
+            </v-btn>
+            <div v-if="generatedPlan && generatedPlan.length" class="mt-4">
+              <h4 class="mb-3">Generated Sessions</h4>
+              <v-list dense>
+                <v-list-item
+                  v-for="event in generatedPlan"
+                  :key="event._id || event.startDate"
+                >
+                  <v-list-item-content>
+                    <v-list-item-title>{{ event.title }}</v-list-item-title>
+                    <v-list-item-subtitle>
+                      {{ formatDateTime(event.startDate) }} -
+                      {{ formatDateTime(event.endDate) }}
+                    </v-list-item-subtitle>
+                  </v-list-item-content>
+                </v-list-item>
+              </v-list>
+            </div>
+          </v-card>
+
           <v-card elevation="3" class="pa-4">
             <v-card-title class="text-h6 mb-4">Upcoming Events</v-card-title>
             <div class="upcoming-events">
@@ -244,6 +307,7 @@
 
 <script>
 import api from "../api";
+import config from "../config";
 import { mapState } from "vuex";
 
 export default {
@@ -280,6 +344,12 @@ export default {
         color: "#3949ab",
         allDay: false,
       },
+      aiPlanPrompt: "",
+      aiPlanStartDate: "",
+      aiPlanEndDate: "",
+      aiDailyHours: 2,
+      generatingPlan: false,
+      generatedPlan: null,
       dayDialog: false,
       deleteDialog: false,
       selectedDay: null,
@@ -401,6 +471,45 @@ export default {
       } catch (error) {
         this.showSnackbar("Error creating event", "error");
         console.error(error);
+      }
+    },
+    async generateStudyPlan() {
+      if (!this.aiPlanPrompt.trim()) {
+        this.showSnackbar(
+          "Please describe your study goals and availability.",
+          "error",
+        );
+        return;
+      }
+
+      this.generatingPlan = true;
+      this.generatedPlan = null;
+
+      try {
+        const response = await api.post(
+          config.API_ENDPOINTS.EVENTS_GENERATE,
+          {
+            prompt: this.aiPlanPrompt,
+            startDate: this.aiPlanStartDate,
+            endDate: this.aiPlanEndDate,
+            dailyHours: this.aiDailyHours,
+          },
+          { headers: { Authorization: `Bearer ${this.token}` } },
+        );
+
+        if (response.data.success) {
+          this.generatedPlan = response.data.events;
+          this.showSnackbar("Study plan generated successfully", "success");
+          this.fetchEvents();
+        }
+      } catch (error) {
+        console.error("Error generating study plan:", error);
+        this.showSnackbar(
+          error.response?.data?.message || "Error generating study plan",
+          "error",
+        );
+      } finally {
+        this.generatingPlan = false;
       }
     },
     confirmDeleteEvent(event) {

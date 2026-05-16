@@ -39,6 +39,103 @@
         </v-col>
       </v-row>
 
+      <v-row class="mb-4">
+        <v-col cols="12">
+          <v-card elevation="3" class="pa-4 mb-4">
+            <div class="d-flex align-center justify-space-between mb-3">
+              <div>
+                <h3 class="text-h6 mb-1">AI Study Material Generator</h3>
+                <p class="text-body-2 mb-0">
+                  Turn a topic, prompt, or notes into a saved study material
+                  entry.
+                </p>
+              </div>
+            </div>
+
+            <v-textarea
+              v-model="materialPrompt"
+              label="Enter topic or notes for AI-generated material"
+              rows="4"
+              auto-grow
+              clearable
+              variant="outlined"
+            />
+
+            <v-row class="mt-3" align="center">
+              <v-col cols="12" md="5">
+                <v-select
+                  v-model="materialCategory"
+                  :items="categories.filter((c) => c !== 'All')"
+                  label="Preferred category"
+                  variant="outlined"
+                  density="compact"
+                  clearable
+                />
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-btn
+                  color="secondary"
+                  class="mt-2"
+                  :loading="generatingMaterial"
+                  :disabled="!materialPrompt.trim()"
+                  @click="generateStudyMaterial"
+                >
+                  Generate Study Material
+                </v-btn>
+              </v-col>
+            </v-row>
+
+            <v-expand-transition>
+              <div v-if="generatedMaterial" class="generated-preview">
+                <v-divider class="my-4" />
+                <h4 class="text-h6 mb-3">Generated Preview</h4>
+                <p>
+                  <strong>{{ generatedMaterial.title }}</strong>
+                </p>
+                <p>
+                  <em>{{ generatedMaterial.category }}</em>
+                </p>
+                <p>{{ generatedMaterial.description }}</p>
+                <pre class="generated-content">{{
+                  generatedMaterial.content
+                }}</pre>
+                <div class="tags-container mt-3">
+                  <v-chip
+                    v-for="tag in generatedMaterial.tags"
+                    :key="tag"
+                    size="x-small"
+                    class="mr-1 mb-1"
+                    variant="outlined"
+                  >
+                    {{ tag }}
+                  </v-chip>
+                </div>
+
+                <v-row class="mt-4" justify="end">
+                  <v-col cols="12" md="6" class="d-flex justify-end">
+                    <v-btn
+                      color="grey"
+                      variant="outlined"
+                      class="mr-3"
+                      @click="discardGeneratedMaterial"
+                    >
+                      Discard Preview
+                    </v-btn>
+                    <v-btn
+                      color="primary"
+                      variant="elevated"
+                      @click="saveGeneratedMaterial"
+                    >
+                      Save Generated Material
+                    </v-btn>
+                  </v-col>
+                </v-row>
+              </div>
+            </v-expand-transition>
+          </v-card>
+        </v-col>
+      </v-row>
+
       <v-row v-if="loading" class="justify-center">
         <v-progress-circular indeterminate color="primary" size="64" />
       </v-row>
@@ -271,6 +368,7 @@
 
 <script>
 import api from "../api";
+import config from "../config";
 import { mapState } from "vuex";
 
 export default {
@@ -295,6 +393,10 @@ export default {
       deleteDialog: false,
       editMode: false,
       selectedMaterial: null,
+      materialPrompt: "",
+      materialCategory: "General",
+      generatingMaterial: false,
+      generatedMaterial: null,
       formData: {
         title: "",
         description: "",
@@ -352,6 +454,83 @@ export default {
       } finally {
         this.loading = false;
       }
+    },
+    async generateStudyMaterial() {
+      if (!this.materialPrompt.trim()) {
+        this.showSnackbar(
+          "Please enter a topic or notes to generate material.",
+          "error",
+        );
+        return;
+      }
+
+      this.generatingMaterial = true;
+      this.generatedMaterial = null;
+
+      try {
+        const response = await api.post(
+          config.API_ENDPOINTS.STUDY_MATERIALS_PREVIEW,
+          {
+            prompt: this.materialPrompt,
+            category: this.materialCategory,
+          },
+        );
+
+        if (response.data.success) {
+          this.generatedMaterial = response.data.material;
+          this.showSnackbar(
+            "Preview generated. Save it when ready.",
+            "success",
+          );
+        } else {
+          this.showSnackbar(
+            response.data.message || "Failed to generate material",
+            "error",
+          );
+        }
+      } catch (error) {
+        this.showSnackbar("Error generating study material", "error");
+        console.error(error);
+      } finally {
+        this.generatingMaterial = false;
+      }
+    },
+    async saveGeneratedMaterial() {
+      if (!this.generatedMaterial) {
+        return;
+      }
+
+      try {
+        const response = await api.post(
+          config.API_ENDPOINTS.MATERIALS,
+          this.generatedMaterial,
+          {
+            headers: { Authorization: `Bearer ${this.token}` },
+          },
+        );
+
+        if (response.data.success) {
+          this.showSnackbar(
+            "Generated material saved successfully.",
+            "success",
+          );
+          this.generatedMaterial = null;
+          this.materialPrompt = "";
+          this.materialCategory = "General";
+          this.fetchMaterials();
+        } else {
+          this.showSnackbar(
+            response.data.message || "Failed to save generated material",
+            "error",
+          );
+        }
+      } catch (error) {
+        this.showSnackbar("Error saving generated material", "error");
+        console.error(error);
+      }
+    },
+    discardGeneratedMaterial() {
+      this.generatedMaterial = null;
     },
     openCreateDialog() {
       this.editMode = false;
@@ -503,10 +682,15 @@ export default {
   overflow-y: auto;
 }
 
-.content-viewer pre {
+.content-viewer pre,
+.generated-content {
   white-space: pre-wrap;
   word-wrap: break-word;
   font-family: inherit;
   margin: 0;
+  background: #fafafa;
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 </style>

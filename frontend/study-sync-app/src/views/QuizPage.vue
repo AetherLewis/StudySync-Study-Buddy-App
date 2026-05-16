@@ -7,6 +7,7 @@
       <v-tabs v-model="activeTab" bg-color="primary" class="mb-4">
         <v-tab value="browse">Browse Quizzes</v-tab>
         <v-tab value="create">Create Quiz</v-tab>
+        <v-tab value="generate">AI Generate</v-tab>
         <v-tab value="take">Take Quiz</v-tab>
       </v-tabs>
 
@@ -213,6 +214,88 @@
           </v-card>
         </v-window-item>
 
+        <v-window-item value="generate">
+          <v-card elevation="3" class="pa-4">
+            <v-card-title class="text-h5 mb-4"
+              >Generate a Quiz with AI</v-card-title
+            >
+            <v-textarea
+              v-model="aiText"
+              label="Paste study notes or topic description"
+              variant="outlined"
+              rows="6"
+            />
+            <v-text-field
+              v-model="aiTopic"
+              label="Quiz title or topic hint"
+              variant="outlined"
+              class="mt-4"
+            />
+            <v-select
+              v-model="aiCategory"
+              :items="categories.filter((c) => c !== 'All')"
+              label="Category"
+              variant="outlined"
+              class="mt-4"
+            />
+            <v-text-field
+              v-model.number="aiCount"
+              label="Number of questions"
+              type="number"
+              min="3"
+              max="10"
+              variant="outlined"
+              class="mt-4"
+            />
+            <v-card-actions class="mt-4">
+              <v-spacer />
+              <v-btn
+                color="primary"
+                variant="elevated"
+                :loading="generating"
+                @click="generateQuiz"
+              >
+                Generate Quiz
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+
+          <v-card v-if="generatedQuiz" elevation="3" class="pa-4 mt-6">
+            <h3 class="mb-3">Generated Quiz Preview</h3>
+            <p><strong>Title:</strong> {{ generatedQuiz.title }}</p>
+            <p><strong>Description:</strong> {{ generatedQuiz.description }}</p>
+            <p><strong>Category:</strong> {{ generatedQuiz.category }}</p>
+            <p>
+              <strong>Questions:</strong> {{ generatedQuiz.questions.length }}
+            </p>
+            <v-list dense>
+              <v-list-item
+                v-for="(question, index) in generatedQuiz.questions"
+                :key="index"
+              >
+                <v-list-item-content>
+                  <v-list-item-title>
+                    {{ index + 1 }}. {{ question.question }}
+                  </v-list-item-title>
+                  <v-list-item-subtitle>
+                    {{ question.options.join(" | ") }}
+                  </v-list-item-subtitle>
+                </v-list-item-content>
+              </v-list-item>
+            </v-list>
+            <v-card-actions>
+              <v-spacer />
+              <v-btn
+                color="primary"
+                variant="elevated"
+                @click="startQuiz(generatedQuiz)"
+              >
+                Take Generated Quiz
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-window-item>
+
         <v-window-item value="take">
           <v-card v-if="!currentQuiz" class="pa-8 text-center">
             <v-icon size="80" color="grey">mdi-clipboard-check-outline</v-icon>
@@ -337,8 +420,8 @@
                   scorePercentage >= 90
                     ? "Excellent work!"
                     : scorePercentage >= 70
-                      ? "Good job!"
-                      : "Keep practicing!"
+                    ? "Good job!"
+                    : "Keep practicing!"
                 }}
               </p>
 
@@ -425,6 +508,7 @@
 
 <script>
 import api from "../api";
+import config from "../config";
 import { mapState } from "vuex";
 
 export default {
@@ -451,6 +535,12 @@ export default {
         category: "General",
         questions: [],
       },
+      aiText: "",
+      aiTopic: "",
+      aiCategory: "General",
+      aiCount: 5,
+      generatedQuiz: null,
+      generating: false,
       currentQuiz: null,
       quizStarted: false,
       quizCompleted: false,
@@ -629,6 +719,45 @@ export default {
       } catch (error) {
         this.showSnackbar("Error deleting quiz", "error");
         console.error(error);
+      }
+    },
+    async generateQuiz() {
+      if (!this.aiText.trim()) {
+        this.showSnackbar(
+          "Please enter study text or notes to generate a quiz.",
+          "error",
+        );
+        return;
+      }
+
+      this.generating = true;
+      this.generatedQuiz = null;
+
+      try {
+        const response = await api.post(
+          config.API_ENDPOINTS.QUIZZES_GENERATE,
+          {
+            text: this.aiText,
+            topic: this.aiTopic,
+            category: this.aiCategory,
+            count: this.aiCount,
+          },
+          { headers: { Authorization: `Bearer ${this.token}` } },
+        );
+
+        if (response.data.success) {
+          this.generatedQuiz = response.data.quiz;
+          this.showSnackbar("Quiz generated successfully", "success");
+          this.fetchQuizzes();
+        }
+      } catch (error) {
+        console.error("Error generating quiz:", error);
+        this.showSnackbar(
+          error.response?.data?.message || "Error generating quiz",
+          "error",
+        );
+      } finally {
+        this.generating = false;
       }
     },
     showSnackbar(text, color) {
