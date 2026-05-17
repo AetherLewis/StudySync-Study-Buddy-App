@@ -485,6 +485,16 @@ export default {
       this.generatingPlan = true;
       this.generatedPlan = null;
 
+      // Phase 8: Set timeout warning
+      const timeoutWarning = setTimeout(() => {
+        if (this.generatingPlan) {
+          this.showSnackbar(
+            "Plan generation is taking longer than expected. Please be patient, this may take up to 3 minutes.",
+            "warning",
+          );
+        }
+      }, 30000); // 30 second warning
+
       try {
         const response = await api.post(
           config.API_ENDPOINTS.EVENTS_GENERATE,
@@ -504,11 +514,29 @@ export default {
         }
       } catch (error) {
         console.error("Error generating study plan:", error);
-        this.showSnackbar(
-          error.response?.data?.message || "Error generating study plan",
-          "error",
-        );
+
+        // Phase 7: Better timeout error messages
+        if (
+          error.message?.includes("timeout") ||
+          error.code === "ECONNABORTED"
+        ) {
+          this.showSnackbar(
+            "Plan generation timed out. Try with a shorter timeframe or simpler goals.",
+            "error",
+          );
+        } else if (error.response?.status === 503) {
+          this.showSnackbar(
+            "AI service is temporarily unavailable. Please try again later.",
+            "error",
+          );
+        } else {
+          this.showSnackbar(
+            error.response?.data?.message || "Error generating study plan",
+            "error",
+          );
+        }
       } finally {
+        clearTimeout(timeoutWarning);
         this.generatingPlan = false;
       }
     },

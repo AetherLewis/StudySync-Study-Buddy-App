@@ -247,9 +247,10 @@
                 color="primary"
                 variant="elevated"
                 :loading="generating"
+                :disabled="generating"
                 @click="generateFlashcards"
               >
-                Generate
+                {{ generating ? "Generating..." : "Generate" }}
               </v-btn>
             </v-card-actions>
           </v-card>
@@ -507,8 +508,27 @@ export default {
         return;
       }
 
+      // Phase 7: Prevent simultaneous requests
+      if (this.generating) {
+        this.showSnackbar(
+          "Flashcards are already being generated. Please wait.",
+          "warning",
+        );
+        return;
+      }
+
       this.generating = true;
       this.generatedCards = [];
+
+      // Phase 8: Set timeout warning
+      const timeoutWarning = setTimeout(() => {
+        if (this.generating) {
+          this.showSnackbar(
+            "Generation is taking longer than expected. Please be patient, this may take up to 3 minutes.",
+            "warning",
+          );
+        }
+      }, 30000); // 30 second warning
 
       try {
         const response = await api.post("/flashcards/generate", {
@@ -522,8 +542,26 @@ export default {
         }
       } catch (error) {
         console.error(error);
-        this.showSnackbar("Error generating flashcards", "error");
+
+        // Phase 7: Better timeout error messages
+        if (
+          error.message?.includes("timeout") ||
+          error.code === "ECONNABORTED"
+        ) {
+          this.showSnackbar(
+            "Generation timed out. Try with shorter text or fewer cards.",
+            "error",
+          );
+        } else if (error.response?.status === 503) {
+          this.showSnackbar(
+            "AI service is temporarily unavailable. Please try again later.",
+            "error",
+          );
+        } else {
+          this.showSnackbar("Error generating flashcards", "error");
+        }
       } finally {
+        clearTimeout(timeoutWarning);
         this.generating = false;
       }
     },

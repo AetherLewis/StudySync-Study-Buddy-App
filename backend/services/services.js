@@ -2,11 +2,10 @@ const jwt = require("jsonwebtoken");
 const bcrypt = require("bcryptjs");
 const axios = require("axios");
 const { User, Group } = require("../models/models");
+const { makeOllamaRequest } = require("../utils/ai/ollamaClient");
+const { limitPromptSize } = require("../utils/ai/promptLimiter");
+const { getOllamaMessageContent } = require("../utils/ai/extractJson");
 require("dotenv").config();
-
-// ─── Ollama AI Config ────────────────────────────────────────────────────────
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "mistral";
 
 // ─── Spotify Token Cache ─────────────────────────────────────────────────────
 let spotifyAccessToken = null;
@@ -197,12 +196,16 @@ const chatWithAI = async (sessionId, message, originalText = "") => {
 
   const history = sessionHistory[sessionId];
 
+  // Phase 2: Apply prompt limiting to user messages
+  const limitedMessage = limitPromptSize(message);
+  const limitedOriginal = originalText ? limitPromptSize(originalText) : "";
+
   // Add opening context message if this is the first message in the session
-  if (history.length === 0 && originalText) {
-    history.push({ role: "user", content: originalText });
+  if (history.length === 0 && limitedOriginal) {
+    history.push({ role: "user", content: limitedOriginal });
   }
 
-  history.push({ role: "user", content: message });
+  history.push({ role: "user", content: limitedMessage });
 
   // Build messages array with system instruction prepended
   const messages = [
@@ -214,17 +217,11 @@ const chatWithAI = async (sessionId, message, originalText = "") => {
   ];
 
   try {
-    const response = await axios.post(
-      `${OLLAMA_BASE_URL}/api/chat`,
-      {
-        model: OLLAMA_MODEL,
-        messages,
-        stream: false,
-      },
-      { timeout: 60000 },
-    );
+    const response = await makeOllamaRequest(messages, {
+      endpoint: "/api/chat",
+    });
 
-    const responseText = response.data.message?.content;
+    const responseText = getOllamaMessageContent(response);
 
     if (!responseText) {
       throw new Error("Empty response from Ollama");

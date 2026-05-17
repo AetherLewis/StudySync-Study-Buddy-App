@@ -1,24 +1,16 @@
-const axios = require("axios");
 const { Quiz } = require("../models/models");
+const { makeOllamaRequest } = require("../utils/ai/ollamaClient");
+const {
+  extractJson,
+  getOllamaMessageContent,
+} = require("../utils/ai/extractJson");
+const {
+  limitPromptSize,
+  sanitizeString,
+} = require("../utils/ai/promptLimiter");
 
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "mistral";
-
-const DEFAULT_QUESTION_COUNT = 5;
-
-const sanitizeString = (value) => (value ? String(value).trim() : "");
-
-const extractJsonPayload = (text) => {
-  const first = text.indexOf("{");
-  const last = text.lastIndexOf("}");
-
-  if (first === -1 || last === -1 || last <= first) {
-    throw new Error("Unable to parse JSON from AI response.");
-  }
-
-  return text.slice(first, last + 1);
-};
+// Phase 6: Reduce AI load - lower default quiz count
+const DEFAULT_QUESTION_COUNT = 3;
 
 const normalizeQuestion = (question) => {
   return {
@@ -92,7 +84,7 @@ const buildQuizPrompt = ({ text, topic, category, count }) => {
     ? `Preferred category: ${sanitizeString(category)}\n`
     : "";
 
-  return `You are a rigorous educational assistant.
+  const prompt = `You are a rigorous educational assistant.
 
 Generate ${questionCount} multiple-choice quiz questions from the following study text.
 
@@ -124,6 +116,9 @@ Rules:
 - Each question must have exactly 4 options
 - correctAnswer must be a number between 0 and 3
 - Make questions educational and accurate`;
+
+  // Apply prompt limiting to control size
+  return limitPromptSize(prompt);
 };
 
 const runQuizGeneration = async ({ text, topic, category, count }) => {
@@ -134,47 +129,31 @@ const runQuizGeneration = async ({ text, topic, category, count }) => {
     count,
   });
 
-  const response = await axios.post(
-    `${OLLAMA_BASE_URL}/api/chat`,
-    {
-      model: OLLAMA_MODEL,
-
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a study assistant generating quizzes. Output valid JSON only.",
-        },
-
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-
-      stream: false,
-    },
-
-    {
-      timeout: 60000,
-    },
+  const response = await makeOllamaRequest(
+    [
+      {
+        role: "system",
+        content:
+          "You are a study assistant generating quizzes. Output valid JSON only.",
+      },
+      {
+        role: "user",
+        content: prompt,
+      },
+    ],
+    { endpoint: "/api/chat" },
   );
 
-  const rawContent =
-    response.data?.message?.content ||
-    response.data?.choices?.[0]?.message?.content;
+  const rawContent = getOllamaMessageContent(response);
 
   if (!rawContent) {
     throw new Error("No content was returned from the AI service.");
   }
 
-  const jsonText = extractJsonPayload(rawContent);
-
   try {
-    return JSON.parse(jsonText);
+    return extractJson(rawContent);
   } catch (error) {
     console.error("Invalid AI JSON:", rawContent);
-
     throw new Error("AI returned invalid JSON for quiz generation.");
   }
 };

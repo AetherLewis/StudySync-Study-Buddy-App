@@ -253,9 +253,10 @@
                 color="primary"
                 variant="elevated"
                 :loading="generating"
+                :disabled="generating"
                 @click="generateQuiz"
               >
-                Generate Quiz
+                {{ generating ? "Generating..." : "Generate Quiz" }}
               </v-btn>
             </v-card-actions>
           </v-card>
@@ -730,8 +731,27 @@ export default {
         return;
       }
 
+      // Phase 7: Prevent simultaneous requests
+      if (this.generating) {
+        this.showSnackbar(
+          "A quiz is already being generated. Please wait.",
+          "warning",
+        );
+        return;
+      }
+
       this.generating = true;
       this.generatedQuiz = null;
+
+      // Phase 8: Set timeout warning
+      const timeoutWarning = setTimeout(() => {
+        if (this.generating) {
+          this.showSnackbar(
+            "Quiz generation is taking longer than expected. This may take up to 3 minutes. Please be patient...",
+            "warning",
+          );
+        }
+      }, 30000); // 30 second warning
 
       try {
         const response = await api.post(
@@ -752,11 +772,29 @@ export default {
         }
       } catch (error) {
         console.error("Error generating quiz:", error);
-        this.showSnackbar(
-          error.response?.data?.message || "Error generating quiz",
-          "error",
-        );
+
+        // Phase 7: Better timeout error messages
+        if (
+          error.message?.includes("timeout") ||
+          error.code === "ECONNABORTED"
+        ) {
+          this.showSnackbar(
+            "Quiz generation timed out. Please try with shorter text or fewer questions.",
+            "error",
+          );
+        } else if (error.response?.status === 503) {
+          this.showSnackbar(
+            "AI service is temporarily unavailable. Please try again in a moment.",
+            "error",
+          );
+        } else {
+          this.showSnackbar(
+            error.response?.data?.message || "Error generating quiz",
+            "error",
+          );
+        }
       } finally {
+        clearTimeout(timeoutWarning);
         this.generating = false;
       }
     },

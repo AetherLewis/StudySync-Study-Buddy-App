@@ -1,8 +1,13 @@
-const axios = require("axios");
 const { Flashcard } = require("../models/models");
-
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "mistral";
+const { makeOllamaRequest } = require("../utils/ai/ollamaClient");
+const {
+  extractJson,
+  getOllamaMessageContent,
+} = require("../utils/ai/extractJson");
+const {
+  limitPromptSize,
+  sanitizeString,
+} = require("../utils/ai/promptLimiter");
 const DEFAULT_EASE = 2.5;
 const MIN_EASE = 1.3;
 
@@ -158,15 +163,6 @@ const reviewFlashcard = async (userId, flashcardId, quality) => {
   return flashcard;
 };
 
-const extractJsonPayload = (text) => {
-  const first = text.indexOf("{");
-  const last = text.lastIndexOf("}");
-  if (first === -1 || last === -1 || last <= first) {
-    throw new Error("Unable to parse JSON from model response.");
-  }
-  return text.slice(first, last + 1);
-};
-
 const validateGeneratedFlashcards = (payload) => {
   if (!payload || !Array.isArray(payload.flashcards)) {
     throw new Error(
@@ -190,50 +186,43 @@ const validateGeneratedFlashcards = (payload) => {
   return cards;
 };
 
-const generateFlashcards = async (text, count = 5) => {
+const generateFlashcards = async (text, count = 3) => {
   if (!text || !String(text).trim()) {
     throw new Error("Study text is required for flashcard generation.");
   }
 
-  const cardCount = Math.min(Math.max(Number(count) || 5, 1), 10);
+  const cardCount = Math.min(Math.max(Number(count) || 3, 1), 10);
+
+  // Phase 2: Apply prompt limiting
+  const limitedText = limitPromptSize(String(text).trim());
+
   const systemMessage = {
     role: "system",
     content:
       "You are a study assistant that creates concise flashcards from a provided study text. Output valid JSON only.",
   };
+
   const userMessage = {
     role: "user",
-    content: `Generate ${cardCount} study flashcards from the text below. Respond ONLY with valid JSON in the following format:\n{\n  \"flashcards\": [\n    {\"front\": \"...\", \"back\": \"...\", \"category\": \"...\", \"tags\": [\"...\"]}\n  ]\n}\n\nText:\n"""${String(text).trim()}"""`,
+    content: `Generate ${cardCount} study flashcards from the text below. Respond ONLY with valid JSON in the following format:\n{\n  "flashcards": [\n    {"front": "...", "back": "...", "category": "...", "tags": ["..."]}\n  ]\n}\n\nText:\n"""${limitedText}"""`,
   };
 
-  const response = await axios.post(
-    `${OLLAMA_BASE_URL}/api/chat`,
-    {
-      model: OLLAMA_MODEL,
-      messages: [systemMessage, userMessage],
-      stream: false,
-    },
-    { timeout: 60000 },
-  );
+  const response = await makeOllamaRequest([systemMessage, userMessage], {
+    endpoint: "/api/chat",
+  });
 
-  const rawContent =
-    response.data?.message?.content ||
-    response.data?.choices?.[0]?.message?.content;
+  const rawContent = getOllamaMessageContent(response);
 
   if (!rawContent) {
     throw new Error("No content returned from AI service.");
   }
 
-  const jsonText = extractJsonPayload(rawContent);
-  let parsed;
-
   try {
-    parsed = JSON.parse(jsonText);
+    const parsed = extractJson(rawContent);
+    return validateGeneratedFlashcards(parsed).slice(0, cardCount);
   } catch (error) {
     throw new Error("AI returned invalid JSON for flashcards.");
   }
-
-  return validateGeneratedFlashcards(parsed).slice(0, cardCount);
 };
 
 module.exports = {

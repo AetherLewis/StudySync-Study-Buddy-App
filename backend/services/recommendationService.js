@@ -1,4 +1,3 @@
-const axios = require("axios");
 const {
   Goal,
   StudyMaterial,
@@ -6,22 +5,15 @@ const {
   Flashcard,
   StudySession,
 } = require("../models/models");
-
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "mistral";
-
-const sanitizeString = (value) => (value ? String(value).trim() : "");
-
-const extractJsonPayload = (text) => {
-  const first = text.indexOf("{");
-  const last = text.lastIndexOf("}");
-
-  if (first === -1 || last === -1 || last <= first) {
-    throw new Error("Unable to parse JSON from AI response.");
-  }
-
-  return text.slice(first, last + 1);
-};
+const { makeOllamaRequest } = require("../utils/ai/ollamaClient");
+const {
+  extractJson,
+  getOllamaMessageContent,
+} = require("../utils/ai/extractJson");
+const {
+  limitPromptSize,
+  sanitizeString,
+} = require("../utils/ai/promptLimiter");
 
 const validateResourceRecommendations = (payload) => {
   if (!payload || typeof payload !== "object") {
@@ -65,12 +57,12 @@ const buildRecommendationPrompt = ({
     .map((g) => `- ${sanitizeString(g.title)} (${g.category})`)
     .join("\n");
   const materialsText = completedMaterials
-    .slice(0, 5)
+    .slice(0, 3)
     .map((m) => `- ${sanitizeString(m.title)}`)
     .join("\n");
-  const topicsText = recentTopics.slice(0, 5).join(", ");
+  const topicsText = recentTopics.slice(0, 3).join(", ");
 
-  return `You are an expert learning resources curator. Based on the learner's current study goals, materials completed, and recent topics, recommend 5-7 high-quality online resources.
+  const promptText = `You are an expert learning resources curator. Based on the learner's current study goals, materials completed, and recent topics, recommend 3-5 high-quality online resources.
 
 ACTIVE STUDY GOALS:
 ${goalsText || "None specified"}
@@ -107,6 +99,9 @@ Requirements:
 - Ensure URLs are valid and realistic
 - Give clear reasoning for each recommendation
 - Return ONLY valid JSON, no additional text`;
+
+  // Phase 2: Apply prompt limiting
+  return limitPromptSize(promptText);
 };
 
 const runRecommendationGeneration = async ({
@@ -115,9 +110,15 @@ const runRecommendationGeneration = async ({
   recentTopics,
   proficiencyLevel,
 }) => {
-  const requestPayload = {
-    model: OLLAMA_MODEL,
-    messages: [
+  const prompt = buildRecommendationPrompt({
+    activeGoals,
+    completedMaterials,
+    recentTopics,
+    proficiencyLevel,
+  });
+
+  const response = await makeOllamaRequest(
+    [
       {
         role: "system",
         content:
@@ -125,35 +126,20 @@ const runRecommendationGeneration = async ({
       },
       {
         role: "user",
-        content: buildRecommendationPrompt({
-          activeGoals,
-          completedMaterials,
-          recentTopics,
-          proficiencyLevel,
-        }),
+        content: prompt,
       },
     ],
-    stream: false,
-  };
-
-  const response = await axios.post(
-    `${OLLAMA_BASE_URL}/api/chat`,
-    requestPayload,
-    { timeout: 60000 },
+    { endpoint: "/api/chat" },
   );
 
-  const rawContent =
-    response.data?.message?.content ||
-    response.data?.choices?.[0]?.message?.content;
+  const rawContent = getOllamaMessageContent(response);
 
   if (!rawContent) {
     throw new Error("No content was returned from the AI service.");
   }
 
-  const jsonText = extractJsonPayload(rawContent);
-
   try {
-    return JSON.parse(jsonText);
+    return extractJson(rawContent);
   } catch (error) {
     throw new Error("AI returned invalid JSON for resource recommendations.");
   }

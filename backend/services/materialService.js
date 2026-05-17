@@ -1,21 +1,13 @@
-const axios = require("axios");
 const { StudyMaterial } = require("../models/models");
-
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "mistral";
-
-const sanitizeString = (value) => (value ? String(value).trim() : "");
-
-const extractJsonPayload = (text) => {
-  const first = text.indexOf("{");
-  const last = text.lastIndexOf("}");
-
-  if (first === -1 || last === -1 || last <= first) {
-    throw new Error("Unable to parse JSON from AI response.");
-  }
-
-  return text.slice(first, last + 1);
-};
+const { makeOllamaRequest } = require("../utils/ai/ollamaClient");
+const {
+  extractJson,
+  getOllamaMessageContent,
+} = require("../utils/ai/extractJson");
+const {
+  limitPromptSize,
+  sanitizeString,
+} = require("../utils/ai/promptLimiter");
 
 const validateStudyMaterialPayload = (payload) => {
   if (!payload || typeof payload !== "object") {
@@ -52,13 +44,17 @@ const buildMaterialPrompt = ({ prompt, category }) => {
     ? `Preferred category: ${sanitizeString(category)}\n`
     : "";
 
-  return `You are a study assistant. Generate a concise and useful study material entry based on the user's prompt. Output valid JSON only using this schema:\n{\n  \"title\": \"...\",\n  \"description\": \"...\",\n  \"category\": \"...\",\n  \"content\": \"...\",\n  \"tags\": [\"...\", \"...\"]\n}\n${categoryHint}User prompt:\n\"\"\"${sanitizeString(prompt)}\"\"\"\nMake sure content is formatted for studying and includes at least one clear explanation or example. Use JSON and do not include additional text.`;
+  const promptText = `You are a study assistant. Generate a concise and useful study material entry based on the user's prompt. Output valid JSON only using this schema:\n{\n  "title": "...",\n  "description": "...",\n  "category": "...",\n  "content": "...",\n  "tags": ["...", "..."]\n}\n${categoryHint}User prompt:\n"""${sanitizeString(prompt)}\"\"\"\nMake sure content is formatted for studying and includes at least one clear explanation or example. Use JSON and do not include additional text.`;
+
+  // Phase 2: Apply prompt limiting
+  return limitPromptSize(promptText);
 };
 
 const runMaterialGeneration = async ({ prompt, category }) => {
-  const requestPayload = {
-    model: OLLAMA_MODEL,
-    messages: [
+  const fullPrompt = buildMaterialPrompt({ prompt, category });
+
+  const response = await makeOllamaRequest(
+    [
       {
         role: "system",
         content:
@@ -66,30 +62,20 @@ const runMaterialGeneration = async ({ prompt, category }) => {
       },
       {
         role: "user",
-        content: buildMaterialPrompt({ prompt, category }),
+        content: fullPrompt,
       },
     ],
-    stream: false,
-  };
-
-  const response = await axios.post(
-    `${OLLAMA_BASE_URL}/api/chat`,
-    requestPayload,
-    { timeout: 60000 },
+    { endpoint: "/api/chat" },
   );
 
-  const rawContent =
-    response.data?.message?.content ||
-    response.data?.choices?.[0]?.message?.content;
+  const rawContent = getOllamaMessageContent(response);
 
   if (!rawContent) {
     throw new Error("No content was returned from the AI service.");
   }
 
-  const jsonText = extractJsonPayload(rawContent);
-
   try {
-    return JSON.parse(jsonText);
+    return extractJson(rawContent);
   } catch (error) {
     throw new Error("AI returned invalid JSON for study material generation.");
   }

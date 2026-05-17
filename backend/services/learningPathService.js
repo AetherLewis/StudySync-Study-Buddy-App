@@ -1,21 +1,13 @@
-const axios = require("axios");
 const { Event } = require("../models/models");
-
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "mistral";
-
-const sanitizeString = (value) => (value ? String(value).trim() : "");
-
-const extractJsonPayload = (text) => {
-  const first = text.indexOf("{");
-  const last = text.lastIndexOf("}");
-
-  if (first === -1 || last === -1 || last <= first) {
-    throw new Error("Unable to parse JSON from AI response.");
-  }
-
-  return text.slice(first, last + 1);
-};
+const { makeOllamaRequest } = require("../utils/ai/ollamaClient");
+const {
+  extractJson,
+  getOllamaMessageContent,
+} = require("../utils/ai/extractJson");
+const {
+  limitPromptSize,
+  sanitizeString,
+} = require("../utils/ai/promptLimiter");
 
 const validateLearningPathPayload = (payload) => {
   if (!payload || typeof payload !== "object") {
@@ -64,7 +56,7 @@ const buildLearningPathPrompt = ({
   currentLevel,
   timeframe,
 }) => {
-  return `You are an expert learning path designer. Create a structured learning path for the following goal.
+  const promptText = `You are an expert learning path designer. Create a structured learning path for the following goal.
 
 Goal Title: ${sanitizeString(goalTitle)}
 Goal Description: ${sanitizeString(goalDescription)}
@@ -87,12 +79,15 @@ Generate a detailed learning path as valid JSON with this exact schema:
 }
 
 Requirements:
-- Break down the goal into 4-6 logical milestones
+- Break down the goal into 3-4 logical milestones
 - Each milestone should have clear deliverables
 - Suggest specific resources (books, courses, practices)
 - Provide realistic day estimates for each milestone
 - Make the path progressive and achievable
 - Return ONLY valid JSON, no additional text`;
+
+  // Phase 2: Apply prompt limiting
+  return limitPromptSize(promptText);
 };
 
 const runLearningPathGeneration = async ({
@@ -101,9 +96,15 @@ const runLearningPathGeneration = async ({
   currentLevel,
   timeframe,
 }) => {
-  const requestPayload = {
-    model: OLLAMA_MODEL,
-    messages: [
+  const prompt = buildLearningPathPrompt({
+    goalTitle,
+    goalDescription,
+    currentLevel,
+    timeframe,
+  });
+
+  const response = await makeOllamaRequest(
+    [
       {
         role: "system",
         content:
@@ -111,35 +112,21 @@ const runLearningPathGeneration = async ({
       },
       {
         role: "user",
-        content: buildLearningPathPrompt({
-          goalTitle,
-          goalDescription,
-          currentLevel,
-          timeframe,
-        }),
+        content: prompt,
       },
     ],
-    stream: false,
-  };
-
-  const response = await axios.post(
-    `${OLLAMA_BASE_URL}/api/chat`,
-    requestPayload,
-    { timeout: 60000 },
+    { endpoint: "/api/chat" },
   );
 
   const rawContent =
-    response.data?.message?.content ||
-    response.data?.choices?.[0]?.message?.content;
+    response?.message?.content || response?.choices?.[0]?.message?.content;
 
   if (!rawContent) {
     throw new Error("No content was returned from the AI service.");
   }
 
-  const jsonText = extractJsonPayload(rawContent);
-
   try {
-    return JSON.parse(jsonText);
+    return extractJson(rawContent);
   } catch (error) {
     throw new Error("AI returned invalid JSON for learning path generation.");
   }

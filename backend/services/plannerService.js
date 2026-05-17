@@ -1,20 +1,13 @@
-const axios = require("axios");
 const { Event } = require("../models/models");
-
-const OLLAMA_BASE_URL = process.env.OLLAMA_BASE_URL || "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "mistral";
-
-const sanitizeString = (value) => (value ? String(value).trim() : "");
-
-const extractJsonPayload = (text) => {
-  const firstIndex = text.indexOf("{");
-  const lastIndex = text.lastIndexOf("}");
-
-  if (firstIndex === -1 || lastIndex === -1 || lastIndex <= firstIndex) {
-    throw new Error("Unable to parse JSON from AI response.");
-  }
-  return text.slice(firstIndex, lastIndex + 1);
-};
+const { makeOllamaRequest } = require("../utils/ai/ollamaClient");
+const {
+  extractJson,
+  getOllamaMessageContent,
+} = require("../utils/ai/extractJson");
+const {
+  limitPromptSize,
+  sanitizeString,
+} = require("../utils/ai/promptLimiter");
 
 const normalizeEvent = (event) => {
   const startDate = new Date(event.startDate);
@@ -61,7 +54,10 @@ const buildPlannerPrompt = ({ prompt, startDate, endDate, dailyHours }) => {
   const requestedStart = sanitizeString(startDate) || "today";
   const requestedEnd = sanitizeString(endDate) || "one week from today";
 
-  return `You are a strict study planner assistant. Create a personalized study schedule for the user based on the following goals and availability. Respond with valid JSON only, using this exact schema:\n{\n  "events": [\n    {\n      \"title\": \"...\",\n      \"description\": \"...\",\n      \"startDate\": \"YYYY-MM-DDTHH:mm:ssZ\",\n      \"endDate\": \"YYYY-MM-DDTHH:mm:ssZ\",\n      \"category\": \"...\",\n      \"color\": \"...\",\n      \"allDay\": false\n    }\n  ]\n}\n\nThe schedule should cover the date range from ${requestedStart} to ${requestedEnd}.\nUse study sessions of up to ${availableHours} hours per day.\nDo not include more than 3 sessions per day.\nKeep titles short and descriptive.\nUse ISO 8601 datetimes for startDate and endDate.\n\nUser goals and context:\n"""${sanitizeString(prompt)}"""\n\nReturn only valid JSON.`;
+  const promptText = `You are a strict study planner assistant. Create a personalized study schedule for the user based on the following goals and availability. Respond with valid JSON only, using this exact schema:\n{\n  "events": [\n    {\n      "title": "...",\n      "description": "...",\n      "startDate": "YYYY-MM-DDTHH:mm:ssZ",\n      "endDate": "YYYY-MM-DDTHH:mm:ssZ",\n      "category": "...",\n      "color": "...",\n      "allDay": false\n    }\n  ]\n}\n\nThe schedule should cover the date range from ${requestedStart} to ${requestedEnd}.\nUse study sessions of up to ${availableHours} hours per day.\nDo not include more than 3 sessions per day.\nKeep titles short and descriptive.\nUse ISO 8601 datetimes for startDate and endDate.\n\nUser goals and context:\n"""${sanitizeString(prompt)}"""\n\nReturn only valid JSON.`;
+
+  // Phase 2: Apply prompt limiting
+  return limitPromptSize(promptText);
 };
 
 const runPlanGeneration = async ({
@@ -77,38 +73,29 @@ const runPlanGeneration = async ({
     dailyHours,
   });
 
-  const response = await axios.post(
-    `${OLLAMA_BASE_URL}/api/chat`,
-    {
-      model: OLLAMA_MODEL,
-      messages: [
-        {
-          role: "system",
-          content:
-            "You are a study planner assistant producing structured JSON output.",
-        },
-        {
-          role: "user",
-          content: fullPrompt,
-        },
-      ],
-      stream: false,
-    },
-    { timeout: 60000 },
+  const response = await makeOllamaRequest(
+    [
+      {
+        role: "system",
+        content:
+          "You are a study planner assistant producing structured JSON output.",
+      },
+      {
+        role: "user",
+        content: fullPrompt,
+      },
+    ],
+    { endpoint: "/api/chat" },
   );
 
-  const rawContent =
-    response.data?.message?.content ||
-    response.data?.choices?.[0]?.message?.content;
+  const rawContent = getOllamaMessageContent(response);
 
   if (!rawContent) {
     throw new Error("No content was returned from the AI service.");
   }
 
-  const jsonText = extractJsonPayload(rawContent);
-
   try {
-    return JSON.parse(jsonText);
+    return extractJson(rawContent);
   } catch (error) {
     throw new Error("AI returned invalid JSON for study plan generation.");
   }
